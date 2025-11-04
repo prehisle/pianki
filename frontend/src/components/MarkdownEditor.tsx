@@ -208,14 +208,16 @@ export default function MarkdownEditor({ value, onChange, placeholder }: Markdow
               }}
             >
               {value ? (
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    img: imageRenderer
-                  }}
-                >
-                  {value}
-                </ReactMarkdown>
+                <div style={{ paddingLeft: '0.5em' }}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      img: imageRenderer
+                    }}
+                  >
+                    {value}
+                  </ReactMarkdown>
+                </div>
               ) : (
                 <Text c="dimmed" size="sm">实时预览...</Text>
               )}

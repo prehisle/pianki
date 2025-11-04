@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { AppShell, Title, Container, Button, Group, Text, Loader, Center, TextInput } from '@mantine/core'
-import { IconPlus } from '@tabler/icons-react'
+import { useState, useEffect, useMemo } from 'react'
+import { AppShell, Title, Container, Button, Group, Text, Loader, Center, TextInput, Select, SegmentedControl } from '@mantine/core'
+import { IconPlus, IconSortAscending, IconSortDescending } from '@tabler/icons-react'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
 import { fetchDecks, fetchCards, createCard, updateCard, deleteCard, exportDeck, createDeck, updateDeck, deleteDeck, Deck, Card } from './api'
@@ -24,6 +24,19 @@ function App() {
     isOpen: false,
     deckId: null
   })
+  const [sortBy, setSortBy] = useState<'created' | 'updated'>('created')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+
+  // 根据排序选项对卡片进行排序
+  const sortedCards = useMemo(() => {
+    const sorted = [...cards]
+    sorted.sort((a, b) => {
+      const dateA = new Date(sortBy === 'created' ? a.created_at : a.updated_at).getTime()
+      const dateB = new Date(sortBy === 'created' ? b.created_at : b.updated_at).getTime()
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB
+    })
+    return sorted
+  }, [cards, sortBy, sortOrder])
 
   // 加载牌组列表
   useEffect(() => {
@@ -313,9 +326,30 @@ function App() {
                     >
                       新建卡片
                     </Button>
-                    <Text c="dimmed" size="sm">
-                      共 {cards.length} 张卡片
-                    </Text>
+                    <Group gap="xs">
+                      <Select
+                        value={sortBy}
+                        onChange={(value) => setSortBy(value as 'created' | 'updated')}
+                        data={[
+                          { value: 'created', label: '创建时间' },
+                          { value: 'updated', label: '修改时间' }
+                        ]}
+                        size="xs"
+                        w={110}
+                      />
+                      <SegmentedControl
+                        value={sortOrder}
+                        onChange={(value) => setSortOrder(value as 'asc' | 'desc')}
+                        data={[
+                          { value: 'desc', label: '↓' },
+                          { value: 'asc', label: '↑' }
+                        ]}
+                        size="xs"
+                      />
+                      <Text c="dimmed" size="sm">
+                        共 {cards.length} 张
+                      </Text>
+                    </Group>
                   </Group>
 
                   {loading ? (
@@ -324,7 +358,7 @@ function App() {
                     </Center>
                   ) : (
                     <CardList
-                      cards={cards}
+                      cards={sortedCards}
                       onEdit={setEditingCard}
                       onDelete={handleDeleteCard}
                     />

@@ -25,7 +25,18 @@ export default function CardEditor({ card, onSave, onCancel }: CardEditorProps) 
   return (
     <form onSubmit={handleSubmit}>
       <Stack gap="lg">
-        <Group justify="space-between">
+        <Group
+          justify="space-between"
+          style={{
+            position: 'sticky',
+            top: 0,
+            backgroundColor: 'white',
+            zIndex: 100,
+            padding: '1rem 0',
+            marginBottom: '0.5rem',
+            borderBottom: '1px solid #e9ecef'
+          }}
+        >
           <Title order={2}>{card ? '编辑卡片' : '新建卡片'}</Title>
           <Group>
             <Button variant="default" leftSection={<IconX size={16} />} onClick={onCancel}>
