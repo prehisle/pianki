@@ -1,11 +1,14 @@
 import axios from 'axios'
 
-// 在 Tauri 环境中使用绝对 URL，开发环境使用相对路径（通过 Vite proxy）
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (typeof window !== 'undefined' && (window as any).__TAURI_IPC__
-    ? 'http://localhost:3001/api'
-    : '/api')
+const trimTrailingSlash = (url: string) => url.replace(/\/+$/, '')
+
+const API_BASE_URL = trimTrailingSlash(
+  import.meta.env.VITE_API_BASE_URL
+    ? String(import.meta.env.VITE_API_BASE_URL)
+    : import.meta.env.DEV
+      ? '/api'
+      : 'http://localhost:3001/api'
+)
 
 export interface Deck {
   id: number
@@ -38,6 +41,10 @@ export interface CreateCardInput {
 // 牌组相关API
 export async function fetchDecks(): Promise<Deck[]> {
   const response = await axios.get(`${API_BASE_URL}/decks`)
+  if (!Array.isArray(response.data)) {
+    console.error('获取牌组接口返回异常数据:', response.data)
+    throw new Error('获取牌组数据格式不正确')
+  }
   return response.data
 }
 
@@ -79,6 +86,10 @@ export async function importDeck(file: File): Promise<{ deck: Deck; cardsImporte
 export async function fetchCards(deckId?: number): Promise<Card[]> {
   const url = deckId ? `${API_BASE_URL}/cards?deck_id=${deckId}` : `${API_BASE_URL}/cards`
   const response = await axios.get(url)
+  if (!Array.isArray(response.data)) {
+    console.error('获取卡片接口返回异常数据:', response.data)
+    throw new Error('获取卡片数据格式不正确')
+  }
   return response.data
 }
 
