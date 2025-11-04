@@ -1,4 +1,4 @@
-import { Card as MantineCard, Text, Button, Group, Stack, Grid, Badge, Tooltip } from '@mantine/core'
+import { Card as MantineCard, Text, Button, Group, Stack, Grid, Badge, Tooltip, Box } from '@mantine/core'
 import { IconEdit, IconTrash, IconClock, IconClockEdit } from '@tabler/icons-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -63,14 +63,14 @@ export default function CardList({ cards, onEdit, onDelete }: CardListProps) {
               <Stack gap="xs">
                 <Badge variant="light" size="sm">正面</Badge>
                 {card.front_text ? (
-                  <Text size="sm">
+                  <Box style={{ fontSize: '0.875rem' }}>
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{ img: imageRenderer }}
                     >
                       {card.front_text}
                     </ReactMarkdown>
-                  </Text>
+                  </Box>
                 ) : (
                   <Text size="sm" c="dimmed">无内容</Text>
                 )}
@@ -80,14 +80,14 @@ export default function CardList({ cards, onEdit, onDelete }: CardListProps) {
               <Stack gap="xs">
                 <Badge variant="light" size="sm" color="teal">反面</Badge>
                 {card.back_text ? (
-                  <Text size="sm">
+                  <Box style={{ fontSize: '0.875rem' }}>
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{ img: imageRenderer }}
                     >
                       {card.back_text}
                     </ReactMarkdown>
-                  </Text>
+                  </Box>
                 ) : (
                   <Text size="sm" c="dimmed">无内容</Text>
                 )}
