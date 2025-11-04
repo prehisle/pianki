@@ -1,62 +1,156 @@
+use std::{
+    net::TcpStream,
+    sync::Mutex,
+    thread,
+    time::{Duration, Instant},
+};
 use tauri::Manager;
-use tauri_plugin_shell::ShellExt;
+use tauri_plugin_shell::{
+    process::{CommandChild, CommandEvent},
+    ShellExt,
+};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-  tauri::Builder::default()
-    .plugin(tauri_plugin_shell::init())
-    .plugin(tauri_plugin_fs::init())
-    .setup(|app| {
-      // 总是启用日志插件（包括生产模式）
-      app.handle().plugin(
-        tauri_plugin_log::Builder::default()
-          .level(log::LevelFilter::Info)
-          .build(),
-      )?;
+    tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_fs::init())
+        .manage(BackendState::default())
+        .setup(|app| {
+            // 总是启用日志插件（包括生产模式）
+            app.handle().plugin(
+                tauri_plugin_log::Builder::default()
+                    .level(log::LevelFilter::Info)
+                    .build(),
+            )?;
 
-      // 获取应用数据目录
-      let app_data_dir = app.path().app_data_dir().expect("Failed to get app data dir");
+            // 获取应用数据目录
+            let app_data_dir = app
+                .path()
+                .app_data_dir()
+                .expect("Failed to get app data dir");
 
-      // 创建数据目录
-      std::fs::create_dir_all(&app_data_dir).expect("Failed to create app data dir");
+            // 创建数据目录
+            std::fs::create_dir_all(&app_data_dir).expect("Failed to create app data dir");
 
-      // 创建 data 和 uploads 子目录
-      let data_dir = app_data_dir.join("data");
-      let uploads_dir = app_data_dir.join("uploads");
-      std::fs::create_dir_all(&data_dir).ok();
-      std::fs::create_dir_all(&uploads_dir).ok();
+            // 创建 data 和 uploads 子目录
+            let data_dir = app_data_dir.join("data");
+            let uploads_dir = app_data_dir.join("uploads");
+            std::fs::create_dir_all(&data_dir).ok();
+            std::fs::create_dir_all(&uploads_dir).ok();
 
-      // 只在生产模式下启动后端 sidecar
-      // 开发模式下由 npm run dev 启动后端
-      if !cfg!(debug_assertions) {
-        log::info!("启动后端服务器 sidecar...");
-        log::info!("数据目录: {}", app_data_dir.display());
+            // 只在生产模式下启动后端 sidecar
+            // 开发模式下由 npm run dev 启动后端
+            if !cfg!(debug_assertions) {
+                log::info!("启动后端服务器 sidecar...");
+                log::info!("数据目录: {}", app_data_dir.display());
 
-        let sidecar_command = app.shell()
-          .sidecar("pianki-backend")
-          .expect("Failed to create sidecar command")
-          .env("PIANKI_DATA_DIR", app_data_dir.to_string_lossy().to_string())
-          .env("PORT", "3001");
+                let sidecar_command = app
+                    .shell()
+                    .sidecar("pianki-backend")
+                    .expect("Failed to create sidecar command")
+                    .env(
+                        "PIANKI_DATA_DIR",
+                        app_data_dir.to_string_lossy().to_string(),
+                    )
+                    .env("PORT", "3001");
 
-        match sidecar_command.spawn() {
-          Ok((_rx, _child)) => {
-            log::info!("后端 sidecar 启动成功，等待服务器就绪...");
+                match sidecar_command.spawn() {
+                    Ok((mut rx, child)) => {
+                        log::info!("后端 sidecar 启动成功，等待服务器就绪...");
 
-            // 等待后端启动（增加等待时间到 5 秒）
-            std::thread::sleep(std::time::Duration::from_secs(5));
+                        // 保存句柄以便退出时关闭
+                        {
+                            let state = app.state::<BackendState>();
+                            state.store_child(child);
+                        }
 
-            log::info!("后端服务器应该已就绪");
-          }
-          Err(e) => {
-            log::error!("启动后端 sidecar 失败: {}", e);
-            eprintln!("❌ 无法启动后端服务器: {}", e);
-            eprintln!("请检查日志文件: {}/pianki-backend.log", app_data_dir.display());
-          }
+                        // 后台记录 sidecar 输出
+                        let log_handle = app.handle().clone();
+                        tauri::async_runtime::spawn(async move {
+                            while let Some(event) = rx.recv().await {
+                                match event {
+                                    CommandEvent::Stdout(line) => {
+                                        log::info!("[backend] {}", String::from_utf8_lossy(&line))
+                                    }
+                                    CommandEvent::Stderr(line) => {
+                                        log::error!("[backend] {}", String::from_utf8_lossy(&line))
+                                    }
+                                    CommandEvent::Terminated(status) => {
+                                        log::info!("后端进程已退出: {:?}", status);
+                                        let state = log_handle.state::<BackendState>();
+                                        state.clear();
+                                        break;
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        });
+
+                        wait_for_backend_ready(Duration::from_secs(5));
+
+                        log::info!("后端服务器应该已就绪");
+                    }
+                    Err(e) => {
+                        log::error!("启动后端 sidecar 失败: {}", e);
+                        eprintln!("❌ 无法启动后端服务器: {}", e);
+                        eprintln!(
+                            "请检查日志文件: {}/pianki-backend.log",
+                            app_data_dir.display()
+                        );
+                    }
+                }
+            }
+
+            Ok(())
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+
+#[derive(Default)]
+struct BackendState {
+    child: Mutex<Option<CommandChild>>,
+}
+
+impl BackendState {
+    fn store_child(&self, child: CommandChild) {
+        let mut guard = self.child.lock().expect("backend child mutex poisoned");
+        *guard = Some(child);
+    }
+
+    fn clear(&self) {
+        let mut guard = self.child.lock().expect("backend child mutex poisoned");
+        guard.take();
+    }
+}
+
+impl Drop for BackendState {
+    fn drop(&mut self) {
+        if let Ok(child_slot) = self.child.get_mut() {
+            if let Some(child) = child_slot.take() {
+                if let Err(err) = child.kill() {
+                    log::warn!("应用退出时关闭后端进程失败: {}", err);
+                }
+            }
         }
-      }
+    }
+}
 
-      Ok(())
-    })
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+fn wait_for_backend_ready(timeout: Duration) {
+    let start = Instant::now();
+    let pause = Duration::from_millis(200);
+
+    while start.elapsed() < timeout {
+        if TcpStream::connect(("127.0.0.1", 3001)).is_ok() {
+            log::info!("后端端口已打开，继续启动前端");
+            return;
+        }
+        thread::sleep(pause);
+    }
+
+    log::warn!(
+        "等待后端超过 {:?}，继续启动（前端可能需要更长时间才能连接）",
+        timeout
+    );
 }
