@@ -24,6 +24,10 @@ function App() {
     isOpen: false,
     deckId: null
   })
+  const [switchDeckConfirm, setSwitchDeckConfirm] = useState<{ isOpen: boolean; targetDeckId: number | null }>({
+    isOpen: false,
+    targetDeckId: null
+  })
   const [sortBy, setSortBy] = useState<'created' | 'updated'>('created')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
@@ -287,7 +291,9 @@ function App() {
       const result = await importDeck(file)
       await loadDecks()
 
-      // 自动选中导入的牌组
+      // 清除编辑状态，然后自动选中导入的牌组
+      setEditingCard(null)
+      setIsCreating(false)
       setCurrentDeckId(result.deck.id)
 
       notifications.show({
@@ -307,6 +313,27 @@ function App() {
     }
   }
 
+  // 处理牌组切换
+  const handleSelectDeck = (deckId: number) => {
+    // 如果正在编辑或创建卡片，提示用户
+    if (isCreating || editingCard) {
+      setSwitchDeckConfirm({ isOpen: true, targetDeckId: deckId })
+    } else {
+      // 直接切换
+      setCurrentDeckId(deckId)
+    }
+  }
+
+  // 确认切换牌组（放弃当前编辑）
+  const confirmSwitchDeck = () => {
+    if (switchDeckConfirm.targetDeckId) {
+      setCurrentDeckId(switchDeckConfirm.targetDeckId)
+      setEditingCard(null)
+      setIsCreating(false)
+      setSwitchDeckConfirm({ isOpen: false, targetDeckId: null })
+    }
+  }
+
   return (
     <AppShell
       header={{ height: 60 }}
@@ -323,7 +350,7 @@ function App() {
         <DeckSelector
           decks={decks}
           currentDeckId={currentDeckId}
-          onSelectDeck={setCurrentDeckId}
+          onSelectDeck={handleSelectDeck}
           onCreateDeck={handleCreateDeck}
           onRenameDeck={handleRenameDeck}
           onDeleteDeck={handleDeleteDeck}
@@ -422,6 +449,17 @@ function App() {
         type="danger"
         onConfirm={confirmDeleteDeck}
         onCancel={() => setDeleteDeckConfirm({ isOpen: false, deckId: null })}
+      />
+
+      <ConfirmDialog
+        isOpen={switchDeckConfirm.isOpen}
+        title="切换牌组"
+        message={`您正在${editingCard ? '编辑' : '创建'}卡片，切换牌组将会放弃当前的编辑内容。确定要继续吗？`}
+        confirmText="放弃并切换"
+        cancelText="取消"
+        type="warning"
+        onConfirm={confirmSwitchDeck}
+        onCancel={() => setSwitchDeckConfirm({ isOpen: false, targetDeckId: null })}
       />
     </AppShell>
   )
