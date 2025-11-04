@@ -1,0 +1,109 @@
+.deck-selector {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.deck-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.deck-header h2 {
+  font-size: 1.2rem;
+  color: #2c3e50;
+}
+
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+}
+
+.btn-sm:hover {
+  background: #2980b9;
+}
+
+.deck-list {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.deck-item {
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.deck-item:hover {
+  background: #e9ecef;
+}
+
+.deck-item.active {
+  background: #e3f2fd;
+  border-color: #3498db;
+}
+
+.deck-info {
+  flex: 1;
+  cursor: pointer;
+}
+
+.deck-name {
+  font-weight: 500;
+  color: #2c3e50;
+  margin-bottom: 0.3rem;
+}
+
+.deck-count {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+}
+
+.deck-actions {
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.deck-item:hover .deck-actions {
+  opacity: 1;
+}
+
+.deck-action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.deck-action-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.1);
+}
+
+.deck-action-delete:hover {
+  background: rgba(231, 76, 60, 0.1);
+}
+
+.btn-export {
+  width: 100%;
+  margin-top: auto;
+}

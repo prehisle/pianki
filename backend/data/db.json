@@ -1,0 +1,20 @@
+{
+  "decks": [
+    {
+      "id": 1,
+      "name": "默认牌组",
+      "description": "我的第一个牌组",
+      "created_at": "2025-11-04T04:17:23.390Z",
+      "updated_at": "2025-11-04T04:17:23.391Z"
+    },
+    {
+      "id": 2,
+      "name": "333",
+      "created_at": "2025-11-04T04:27:51.226Z",
+      "updated_at": "2025-11-04T04:27:51.226Z"
+    }
+  ],
+  "cards": [],
+  "nextDeckId": 3,
+  "nextCardId": 3
+}
