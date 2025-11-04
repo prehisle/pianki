@@ -25,5 +25,14 @@
     "@types/multer": "^1.4.11",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
+  },
+  "pkg": {
+    "assets": [
+      "node_modules/lowdb/**/*",
+      "node_modules/anki-apkg-export/**/*",
+      "node_modules/marked/**/*",
+      "node_modules/better-sqlite3/**/*"
+    ],
+    "outputPath": "dist"
   }
 }

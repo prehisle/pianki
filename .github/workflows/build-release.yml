@@ -63,14 +63,14 @@ jobs:
       - name: Package backend binary (Unix)
         if: matrix.platform != 'windows-latest'
         run: |
-          npx pkg backend/dist/index.js -t ${{ matrix.pkg_target }} -o src-tauri/binaries/pianki-backend-${{ matrix.target }} --compress Brotli
+          npx pkg backend/dist/index.js -t ${{ matrix.pkg_target }} -o src-tauri/binaries/pianki-backend-${{ matrix.target }} --compress Brotli --public-packages "lowdb,anki-apkg-export,marked,better-sqlite3" --no-bytecode --public
           chmod +x src-tauri/binaries/pianki-backend-${{ matrix.target }}
         shell: bash
 
       - name: Package backend binary (Windows)
         if: matrix.platform == 'windows-latest'
         run: |
-          npx pkg backend/dist/index.js -t ${{ matrix.pkg_target }} -o src-tauri/binaries/pianki-backend-${{ matrix.target }}.exe --compress GZip
+          npx pkg backend/dist/index.js -t ${{ matrix.pkg_target }} -o src-tauri/binaries/pianki-backend-${{ matrix.target }}.exe --compress GZip --public-packages "lowdb,anki-apkg-export,marked,better-sqlite3" --no-bytecode --public
         shell: bash
 
       - name: Verify backend binary
