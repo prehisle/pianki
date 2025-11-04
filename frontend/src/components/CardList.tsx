@@ -1,7 +1,8 @@
-import { Card } from '../api'
+import { Card as MantineCard, Text, Button, Group, Stack, Grid, Badge } from '@mantine/core'
+import { IconEdit, IconTrash } from '@tabler/icons-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import './CardList.css'
+import { Card } from '../api'
 
 interface CardListProps {
   cards: Card[]
@@ -18,68 +19,79 @@ const imageRenderer = ({ src, alt }: { src?: string; alt?: string }) => {
     ? `http://localhost:3001${src}`
     : src
 
-  return <img src={imageSrc} alt={alt || '图片'} />
+  return <img src={imageSrc} alt={alt || '图片'} style={{ maxWidth: '100%' }} />
 }
 
 export default function CardList({ cards, onEdit, onDelete }: CardListProps) {
   if (cards.length === 0) {
     return (
-      <div className="empty-cards">
-        <p>还没有卡片，点击"新建卡片"开始创建吧！</p>
-      </div>
+      <Text c="dimmed" ta="center" mt="xl" size="lg">
+        还没有卡片，点击上方按钮创建第一张卡片
+      </Text>
     )
   }
 
   return (
-    <div className="card-list">
+    <Stack gap="md">
       {cards.map(card => (
-        <div key={card.id} className="card-item">
-          <div className="card-content">
-            <div className="card-side">
-              <div className="card-label">正面</div>
-              {card.front_text ? (
-                <div className="card-text card-markdown">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{ img: imageRenderer }}
-                  >
-                    {card.front_text}
-                  </ReactMarkdown>
-                </div>
-              ) : (
-                <div className="card-empty">(空)</div>
-              )}
-            </div>
-
-            <div className="card-divider">→</div>
-
-            <div className="card-side">
-              <div className="card-label">背面</div>
-              {card.back_text ? (
-                <div className="card-text card-markdown">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{ img: imageRenderer }}
-                  >
-                    {card.back_text}
-                  </ReactMarkdown>
-                </div>
-              ) : (
-                <div className="card-empty">(空)</div>
-              )}
-            </div>
-          </div>
-
-          <div className="card-actions">
-            <button className="btn btn-sm btn-secondary" onClick={() => onEdit(card)}>
-              ✏️ 编辑
-            </button>
-            <button className="btn btn-sm btn-danger" onClick={() => onDelete(card.id)}>
-              🗑️ 删除
-            </button>
-          </div>
-        </div>
+        <MantineCard key={card.id} shadow="sm" padding="lg" radius="md" withBorder>
+          <Grid>
+            <Grid.Col span={6}>
+              <Stack gap="xs">
+                <Badge variant="light" size="sm">正面</Badge>
+                {card.front_text ? (
+                  <Text size="sm">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{ img: imageRenderer }}
+                    >
+                      {card.front_text}
+                    </ReactMarkdown>
+                  </Text>
+                ) : (
+                  <Text size="sm" c="dimmed">无内容</Text>
+                )}
+              </Stack>
+            </Grid.Col>
+            <Grid.Col span={6}>
+              <Stack gap="xs">
+                <Badge variant="light" size="sm" color="teal">反面</Badge>
+                {card.back_text ? (
+                  <Text size="sm">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{ img: imageRenderer }}
+                    >
+                      {card.back_text}
+                    </ReactMarkdown>
+                  </Text>
+                ) : (
+                  <Text size="sm" c="dimmed">无内容</Text>
+                )}
+              </Stack>
+            </Grid.Col>
+          </Grid>
+          <Group justify="flex-end" mt="md">
+            <Button
+              variant="light"
+              leftSection={<IconEdit size={16} />}
+              onClick={() => onEdit(card)}
+              size="xs"
+            >
+              编辑
+            </Button>
+            <Button
+              variant="light"
+              color="red"
+              leftSection={<IconTrash size={16} />}
+              onClick={() => onDelete(card.id)}
+              size="xs"
+            >
+              删除
+            </Button>
+          </Group>
+        </MantineCard>
       ))}
-    </div>
+    </Stack>
   )
 }

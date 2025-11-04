@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import './App.css'
+import { AppShell, Title, Container, Button, Group, Text, Loader, Center } from '@mantine/core'
+import { IconPlus } from '@tabler/icons-react'
 import { fetchDecks, fetchCards, createCard, updateCard, deleteCard, exportDeck, createDeck, updateDeck, deleteDeck, Deck, Card } from './api'
 import CardEditor from './components/CardEditor'
 import CardList from './components/CardList'
@@ -168,29 +169,35 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <header className="header">
-        <h1>📚 Pianki - Anki卡片制作工具</h1>
-      </header>
+    <AppShell
+      header={{ height: 60 }}
+      navbar={{ width: 280, breakpoint: 'sm' }}
+      padding="md"
+    >
+      <AppShell.Header>
+        <Group h="100%" px="md">
+          <Title order={2}>📚 Pianki - Anki卡片制作工具</Title>
+        </Group>
+      </AppShell.Header>
 
-      <div className="container">
-        <aside className="sidebar">
-          <DeckSelector
-            decks={decks}
-            currentDeckId={currentDeckId}
-            onSelectDeck={setCurrentDeckId}
-            onCreateDeck={handleCreateDeck}
-            onRenameDeck={handleRenameDeck}
-            onDeleteDeck={handleDeleteDeck}
-            onExport={handleExport}
-          />
-        </aside>
+      <AppShell.Navbar p="md">
+        <DeckSelector
+          decks={decks}
+          currentDeckId={currentDeckId}
+          onSelectDeck={setCurrentDeckId}
+          onCreateDeck={handleCreateDeck}
+          onRenameDeck={handleRenameDeck}
+          onDeleteDeck={handleDeleteDeck}
+          onExport={handleExport}
+        />
+      </AppShell.Navbar>
 
-        <main className="main">
+      <AppShell.Main>
+        <Container size="xl">
           {!currentDeckId ? (
-            <div className="empty-state">
-              <p>请先创建或选择一个牌组</p>
-            </div>
+            <Center h={400}>
+              <Text c="dimmed" size="lg">请先创建或选择一个牌组</Text>
+            </Center>
           ) : (
             <>
               {(isCreating || editingCard) ? (
@@ -204,20 +211,22 @@ function App() {
                 />
               ) : (
                 <>
-                  <div className="toolbar">
-                    <button
-                      className="btn btn-primary"
+                  <Group justify="space-between" mb="md">
+                    <Button
+                      leftSection={<IconPlus size={16} />}
                       onClick={() => setIsCreating(true)}
                     >
-                      ➕ 新建卡片
-                    </button>
-                    <div className="card-count">
+                      新建卡片
+                    </Button>
+                    <Text c="dimmed" size="sm">
                       共 {cards.length} 张卡片
-                    </div>
-                  </div>
+                    </Text>
+                  </Group>
 
                   {loading ? (
-                    <div className="loading">加载中...</div>
+                    <Center h={200}>
+                      <Loader />
+                    </Center>
                   ) : (
                     <CardList
                       cards={cards}
@@ -229,8 +238,8 @@ function App() {
               )}
             </>
           )}
-        </main>
-      </div>
+        </Container>
+      </AppShell.Main>
 
       <ConfirmDialog
         isOpen={deleteConfirm.isOpen}
@@ -253,7 +262,7 @@ function App() {
         onConfirm={confirmDeleteDeck}
         onCancel={() => setDeleteDeckConfirm({ isOpen: false, deckId: null })}
       />
-    </div>
+    </AppShell>
   )
 }
 

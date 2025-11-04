@@ -1,9 +1,11 @@
 import { useRef } from 'react'
+import { Box, Textarea, Button, Group, Paper, Text, Stack, Grid, FileButton } from '@mantine/core'
+import { IconPhoto, IconBold, IconItalic, IconCode, IconHelp } from '@tabler/icons-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import TurndownService from 'turndown'
 import { uploadImage } from '../api'
-import './MarkdownEditor.css'
+import { modals } from '@mantine/modals'
 
 interface MarkdownEditorProps {
   value: string
@@ -13,7 +15,6 @@ interface MarkdownEditorProps {
 
 export default function MarkdownEditor({ value, onChange, placeholder }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const turndownService = useRef(new TurndownService({
     headingStyle: 'atx',
     codeBlockStyle: 'fenced'
@@ -94,128 +95,112 @@ export default function MarkdownEditor({ value, onChange, placeholder }: Markdow
       ? `http://localhost:3001${src}`
       : src
 
-    return <img src={imageSrc} alt={alt || '图片'} />
+    return <img src={imageSrc} alt={alt || '图片'} style={{ maxWidth: '100%' }} />
+  }
+
+  const showHelp = () => {
+    modals.open({
+      title: 'Markdown 语法帮助',
+      children: (
+        <Stack gap="xs">
+          <Text size="sm">**粗体** 或 __粗体__</Text>
+          <Text size="sm">*斜体* 或 _斜体_</Text>
+          <Text size="sm">~~删除线~~</Text>
+          <Text size="sm" mt="xs"># 标题1</Text>
+          <Text size="sm">## 标题2</Text>
+          <Text size="sm">### 标题3</Text>
+          <Text size="sm" mt="xs">- 无序列表项</Text>
+          <Text size="sm">1. 有序列表项</Text>
+          <Text size="sm" mt="xs">[链接文字](https://example.com)</Text>
+          <Text size="sm">![图片](图片URL)</Text>
+          <Text size="sm" mt="xs">&gt; 引用文本</Text>
+          <Text size="sm" mt="xs">`代码`</Text>
+          <Text size="sm">```代码块```</Text>
+        </Stack>
+      ),
+    })
   }
 
   return (
-    <div className="markdown-editor">
-      <div className="markdown-toolbar">
-        <button
-          type="button"
-          className="toolbar-btn"
-          title="插入图片"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          📷 插入图片
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) handleImageUpload(file)
-            e.target.value = '' // 清空以允许重复上传同一文件
-          }}
-        />
-        <div className="toolbar-divider"></div>
-        <button
-          type="button"
-          className="toolbar-btn"
-          title="粗体"
+    <Stack gap="md">
+      <Group gap="xs">
+        <FileButton onChange={handleImageUpload} accept="image/*">
+          {(props) => (
+            <Button {...props} leftSection={<IconPhoto size={16} />} variant="light" size="xs">
+              插入图片
+            </Button>
+          )}
+        </FileButton>
+        <Button
+          leftSection={<IconBold size={16} />}
+          variant="subtle"
+          size="xs"
           onClick={() => insertAtCursor('**粗体文字**')}
         >
-          <strong>B</strong>
-        </button>
-        <button
-          type="button"
-          className="toolbar-btn"
-          title="斜体"
+          粗体
+        </Button>
+        <Button
+          leftSection={<IconItalic size={16} />}
+          variant="subtle"
+          size="xs"
           onClick={() => insertAtCursor('*斜体文字*')}
         >
-          <em>I</em>
-        </button>
-        <button
-          type="button"
-          className="toolbar-btn"
-          title="代码"
+          斜体
+        </Button>
+        <Button
+          leftSection={<IconCode size={16} />}
+          variant="subtle"
+          size="xs"
           onClick={() => insertAtCursor('`代码`')}
         >
-          {'<>'}
-        </button>
-        <div className="toolbar-divider"></div>
-        <button
-          type="button"
-          className="toolbar-btn toolbar-help"
-          title="Markdown语法帮助"
-          onClick={() => {
-            const help = `
-Markdown语法快速参考：
-
-**粗体**  或  __粗体__
-*斜体*  或  _斜体_
-~~删除线~~
-
-# 标题1
-## 标题2
-### 标题3
-
-- 无序列表项
-- 无序列表项
-
-1. 有序列表项
-2. 有序列表项
-
-[链接文字](https://example.com)
-![图片说明](图片URL)
-
-> 引用文本
-
-\`代码\`
-
-\`\`\`
-代码块
-\`\`\`
-            `.trim()
-            alert(help)
-          }}
+          代码
+        </Button>
+        <Button
+          leftSection={<IconHelp size={16} />}
+          variant="subtle"
+          size="xs"
+          onClick={showHelp}
         >
-          ❓
-        </button>
-      </div>
+          帮助
+        </Button>
+      </Group>
 
-      <div className="markdown-content split-view">
-        <div className="editor-pane">
-          <div className="pane-label">编辑</div>
-          <textarea
-            ref={textareaRef}
-            className="markdown-textarea"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onPaste={handlePaste}
-            placeholder={placeholder || '支持Markdown格式... 可直接粘贴图片'}
-            rows={10}
-          />
-        </div>
-        <div className="preview-pane">
-          <div className="pane-label">预览</div>
-          <div className="markdown-preview">
-            {value ? (
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  img: imageRenderer
-                }}
-              >
-                {value}
-              </ReactMarkdown>
-            ) : (
-              <div className="preview-empty">实时预览...</div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+      <Grid gutter="md">
+        <Grid.Col span={6}>
+          <Stack gap="xs">
+            <Text size="sm" fw={500}>编辑</Text>
+            <Textarea
+              ref={textareaRef}
+              value={value}
+              onChange={(e) => onChange(e.currentTarget.value)}
+              onPaste={handlePaste}
+              placeholder={placeholder || '支持Markdown格式... 可直接粘贴图片'}
+              minRows={15}
+              autosize
+              maxRows={25}
+            />
+          </Stack>
+        </Grid.Col>
+        <Grid.Col span={6}>
+          <Stack gap="xs">
+            <Text size="sm" fw={500}>预览</Text>
+            <Paper withBorder p="md" mih={400} style={{ overflow: 'auto' }}>
+              {value ? (
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    img: imageRenderer
+                  }}
+                >
+                  {value}
+                </ReactMarkdown>
+              ) : (
+                <Text c="dimmed" size="sm">实时预览...</Text>
+              )}
+            </Paper>
+          </Stack>
+        </Grid.Col>
+      </Grid>
+    </Stack>
   )
 }

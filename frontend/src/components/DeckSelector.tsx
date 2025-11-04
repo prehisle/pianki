@@ -1,5 +1,6 @@
+import { Stack, Title, Button, Group, NavLink, ActionIcon, Badge, Text } from '@mantine/core'
+import { IconPlus, IconEdit, IconTrash, IconPackageExport } from '@tabler/icons-react'
 import { Deck } from '../api'
-import './DeckSelector.css'
 
 interface DeckSelectorProps {
   decks: Deck[]
@@ -21,55 +22,63 @@ export default function DeckSelector({
   onExport
 }: DeckSelectorProps) {
   return (
-    <div className="deck-selector">
-      <div className="deck-header">
-        <h2>牌组</h2>
-        <button className="btn btn-sm" onClick={onCreateDeck}>
-          ➕
-        </button>
-      </div>
+    <Stack gap="md" h="100%" style={{ display: 'flex', flexDirection: 'column' }}>
+      <Group justify="space-between">
+        <Title order={3}>牌组</Title>
+        <ActionIcon variant="filled" onClick={onCreateDeck}>
+          <IconPlus size={18} />
+        </ActionIcon>
+      </Group>
 
-      <div className="deck-list">
+      <Stack gap="xs" style={{ flex: 1, overflow: 'auto' }}>
         {decks.map(deck => (
-          <div
+          <NavLink
             key={deck.id}
-            className={`deck-item ${currentDeckId === deck.id ? 'active' : ''}`}
-          >
-            <div className="deck-info" onClick={() => onSelectDeck(deck.id)}>
-              <div className="deck-name">{deck.name}</div>
-              <div className="deck-count">{deck.card_count || 0} 张</div>
-            </div>
-            <div className="deck-actions">
-              <button
-                className="deck-action-btn"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRenameDeck(deck.id)
-                }}
-                title="重命名"
-              >
-                ✏️
-              </button>
-              <button
-                className="deck-action-btn deck-action-delete"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onDeleteDeck(deck.id)
-                }}
-                title="删除"
-              >
-                🗑️
-              </button>
-            </div>
-          </div>
+            label={
+              <Group justify="space-between" wrap="nowrap">
+                <Text size="sm" fw={500}>{deck.name}</Text>
+                <Group gap={4}>
+                  <ActionIcon
+                    size="sm"
+                    variant="subtle"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onRenameDeck(deck.id)
+                    }}
+                  >
+                    <IconEdit size={14} />
+                  </ActionIcon>
+                  <ActionIcon
+                    size="sm"
+                    variant="subtle"
+                    color="red"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onDeleteDeck(deck.id)
+                    }}
+                  >
+                    <IconTrash size={14} />
+                  </ActionIcon>
+                </Group>
+              </Group>
+            }
+            description={`${deck.card_count || 0} 张卡片`}
+            active={currentDeckId === deck.id}
+            onClick={() => onSelectDeck(deck.id)}
+          />
         ))}
-      </div>
+      </Stack>
 
       {currentDeckId && (
-        <button className="btn btn-success btn-export" onClick={onExport}>
-          📦 导出为 .apkg
-        </button>
+        <Button
+          fullWidth
+          leftSection={<IconPackageExport size={16} />}
+          onClick={onExport}
+          color="green"
+        >
+          导出为 .apkg
+        </Button>
       )}
-    </div>
+    </Stack>
   )
 }
