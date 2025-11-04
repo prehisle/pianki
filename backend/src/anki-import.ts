@@ -24,6 +24,21 @@ export async function importFromAnki(apkgBuffer: Buffer, uploadsDir: string): Pr
     const zip = new JSZip();
     const zipContent = await zip.loadAsync(apkgBuffer);
 
+    // 读取媒体文件映射
+    const mediaMapping: Record<string, string> = {};
+    const mediaFile = zipContent.file('media');
+
+    if (mediaFile) {
+      try {
+        const mediaContent = await mediaFile.async('string');
+        const mediaJson = JSON.parse(mediaContent);
+        // media文件格式: {"0": "original-filename.png", "1": "another-file.jpg", ...}
+        Object.assign(mediaMapping, mediaJson);
+      } catch (e) {
+        console.error('读取媒体映射失败:', e);
+      }
+    }
+
     // 查找collection文件
     const collectionFile = zipContent.file('collection.anki2') || zipContent.file('collection.anki21');
 
@@ -74,7 +89,26 @@ export async function importFromAnki(apkgBuffer: Buffer, uploadsDir: string): Pr
           const srcMatch = /<img[^>]+src="([^"]+)"/.exec(field);
           if (srcMatch) {
             const imageName = srcMatch[1];
-            const imageFile = zipContent.file(imageName);
+
+            // 在.apkg文件中，媒体文件以数字命名（0, 1, 2...）
+            // media文件包含数字到原始文件名的映射
+            // 需要找到哪个数字对应这个文件名
+            let actualFileName: string | null = null;
+
+            // 反向查找：从原始文件名找到数字
+            for (const [numKey, originalName] of Object.entries(mediaMapping)) {
+              if (originalName === imageName) {
+                actualFileName = numKey;
+                break;
+              }
+            }
+
+            // 如果没有找到映射，直接尝试使用原文件名
+            if (!actualFileName) {
+              actualFileName = imageName;
+            }
+
+            const imageFile = zipContent.file(actualFileName);
 
             if (imageFile) {
               try {

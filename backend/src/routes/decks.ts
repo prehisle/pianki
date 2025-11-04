@@ -202,10 +202,10 @@ router.post('/import', upload.single('file'), async (req, res) => {
       const newCard = {
         id: db.data.nextCardId++,
         deck_id: newDeck.id,
-        front_text: card.front_text,
-        front_image: card.front_image,
-        back_text: card.back_text,
-        back_image: card.back_image,
+        front_text: card.front_text || undefined,
+        front_image: card.front_image || undefined,
+        back_text: card.back_text || undefined,
+        back_image: card.back_image || undefined,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
