@@ -53,13 +53,22 @@ jobs:
       - name: Build frontend and backend
         run: npm run build
 
-      - name: Package backend binary
+      - name: Create binaries directory
+        run: mkdir -p src-tauri/binaries
+        shell: bash
+
+      - name: Package backend binary (Unix)
+        if: matrix.platform != 'windows-latest'
         run: |
           npx pkg backend/dist/index.js -t ${{ matrix.pkg_target }} -o src-tauri/binaries/pianki-backend-${{ matrix.target }} --compress Brotli
+          chmod +x src-tauri/binaries/pianki-backend-${{ matrix.target }}
+        shell: bash
 
-      - name: Make binary executable (Unix)
-        if: matrix.platform != 'windows-latest'
-        run: chmod +x src-tauri/binaries/pianki-backend-${{ matrix.target }}
+      - name: Package backend binary (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          npx pkg backend/dist/index.js -t ${{ matrix.pkg_target }} -o src-tauri/binaries/pianki-backend-${{ matrix.target }}.exe --compress GZip
+        shell: bash
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
