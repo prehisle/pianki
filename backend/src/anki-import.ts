@@ -2,6 +2,9 @@ import JSZip from 'jszip';
 import path from 'path';
 import fs from 'fs/promises';
 
+// 使用require导入sql.js
+const initSqlJs = require('sql.js');
+
 interface ImportedCard {
   front_text?: string;
   back_text?: string;
@@ -31,12 +34,8 @@ export async function importFromAnki(apkgBuffer: Buffer, uploadsDir: string): Pr
     // 读取SQLite数据库
     const dbBuffer = await collectionFile.async('nodebuffer');
 
-    // 动态导入sql.js
-    // @ts-ignore - sql.js没有类型定义
-    const initSqlJs = (await import('sql.js')).default;
-    const SQL = await initSqlJs({
-      locateFile: (file: string) => `https://sql.js.org/dist/${file}`
-    });
+    // 初始化sql.js
+    const SQL = await initSqlJs();
     const db = new SQL.Database(new Uint8Array(dbBuffer));
 
     // 提取牌组名称
