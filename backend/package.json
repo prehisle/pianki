@@ -9,18 +9,20 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "multer": "^1.4.5-lts.1",
-    "lowdb": "^7.0.1",
     "anki-apkg-export": "^4.0.1",
-    "marked": "^11.1.1"
+    "better-sqlite3": "^12.4.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "lowdb": "^7.0.1",
+    "marked": "^11.1.1",
+    "multer": "^1.4.5-lts.1",
+    "sql.js": "^0.5.0"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
     "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
     "@types/multer": "^1.4.11",
-    "typescript": "^5.3.3",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   }
 }

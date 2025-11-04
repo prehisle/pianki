@@ -4,7 +4,7 @@ import path from 'path';
 import db from '../database';
 import { CreateDeckInput } from '../types';
 import { exportToAnki } from '../anki-export';
-import { importFromAnkiSimple } from '../anki-import-simple';
+import { importFromAnki } from '../anki-import';
 
 const router = express.Router();
 
@@ -182,7 +182,7 @@ router.post('/import', upload.single('file'), async (req, res) => {
     }
 
     const uploadsDir = path.join(__dirname, '../../uploads');
-    const importedDeck = await importFromAnkiSimple(req.file.buffer, uploadsDir);
+    const importedDeck = await importFromAnki(req.file.buffer, uploadsDir);
 
     await db.read();
 
