@@ -56,8 +56,11 @@ export default function CardList({ cards, onEdit, onDelete }: CardListProps) {
 
   return (
     <Stack gap="md">
-      {cards.map(card => (
+      {cards.map((card, index) => (
         <MantineCard key={card.id} shadow="sm" padding="lg" radius="md" withBorder>
+          <Group justify="space-between" mb="xs">
+            <Badge variant="filled" size="lg" color="gray">#{index + 1}</Badge>
+          </Group>
           <Grid>
             <Grid.Col span={6}>
               <Stack gap="xs">

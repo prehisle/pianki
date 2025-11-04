@@ -31,9 +31,12 @@ export async function importFromAnki(apkgBuffer: Buffer, uploadsDir: string): Pr
     // 读取SQLite数据库
     const dbBuffer = await collectionFile.async('nodebuffer');
 
-    // 动态require sql.js以避免ES模块问题
-    const initSqlJs = require('sql.js');
-    const SQL = await initSqlJs();
+    // 动态导入sql.js
+    // @ts-ignore - sql.js没有类型定义
+    const initSqlJs = (await import('sql.js')).default;
+    const SQL = await initSqlJs({
+      locateFile: (file: string) => `https://sql.js.org/dist/${file}`
+    });
     const db = new SQL.Database(new Uint8Array(dbBuffer));
 
     // 提取牌组名称
@@ -61,7 +64,7 @@ export async function importFromAnki(apkgBuffer: Buffer, uploadsDir: string): Pr
         const fields = (row[1] as string).split('\x1f'); // Anki使用\x1f分隔字段
 
         // 处理图片引用
-        const processField = async (field: string, fieldIndex: number, noteId: number): Promise<{ text?: string; image?: string }> => {
+        const processField = async (field: string): Promise<{ text?: string; image?: string }> => {
           // 检查是否包含图片标签
           const imgRegex = /<img[^>]+src="([^"]+)"/g;
           const matches = field.match(imgRegex);
@@ -94,8 +97,8 @@ export async function importFromAnki(apkgBuffer: Buffer, uploadsDir: string): Pr
         };
 
         // 处理正面和背面
-        const front = await processField(fields[0] || '', 0, row[0] as number);
-        const back = await processField(fields[1] || '', 1, row[0] as number);
+        const front = await processField(fields[0] || '');
+        const back = await processField(fields[1] || '');
 
         cards.push({
           front_text: front.text,
