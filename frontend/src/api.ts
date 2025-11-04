@@ -57,6 +57,19 @@ export async function exportDeck(deckId: number): Promise<Blob> {
   return response.data
 }
 
+export async function importDeck(file: File): Promise<{ deck: Deck; cardsImported: number }> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await axios.post(`${API_BASE_URL}/decks/import`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+
+  return response.data
+}
+
 // 卡片相关API
 export async function fetchCards(deckId?: number): Promise<Card[]> {
   const url = deckId ? `${API_BASE_URL}/cards?deck_id=${deckId}` : `${API_BASE_URL}/cards`

@@ -3,7 +3,7 @@ import { AppShell, Title, Container, Button, Group, Text, Loader, Center, TextIn
 import { IconPlus, IconSortAscending, IconSortDescending } from '@tabler/icons-react'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
-import { fetchDecks, fetchCards, createCard, updateCard, deleteCard, exportDeck, createDeck, updateDeck, deleteDeck, Deck, Card } from './api'
+import { fetchDecks, fetchCards, createCard, updateCard, deleteCard, exportDeck, importDeck, createDeck, updateDeck, deleteDeck, Deck, Card } from './api'
 import CardEditor from './components/CardEditor'
 import CardList from './components/CardList'
 import DeckSelector from './components/DeckSelector'
@@ -276,6 +276,32 @@ function App() {
     }
   }
 
+  const handleImport = async (file: File) => {
+    try {
+      setLoading(true)
+      const result = await importDeck(file)
+      await loadDecks()
+
+      // 自动选中导入的牌组
+      setCurrentDeckId(result.deck.id)
+
+      notifications.show({
+        title: '成功',
+        message: `成功导入牌组"${result.deck.name}"，共${result.cardsImported}张卡片`,
+        color: 'green',
+      })
+    } catch (error) {
+      console.error('导入失败:', error)
+      notifications.show({
+        title: '错误',
+        message: '导入失败: ' + (error as Error).message,
+        color: 'red',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <AppShell
       header={{ height: 60 }}
@@ -297,6 +323,7 @@ function App() {
           onRenameDeck={handleRenameDeck}
           onDeleteDeck={handleDeleteDeck}
           onExport={handleExport}
+          onImport={handleImport}
         />
       </AppShell.Navbar>
 

@@ -1,5 +1,5 @@
-import { Stack, Title, Button, Group, NavLink, ActionIcon, Badge, Text } from '@mantine/core'
-import { IconPlus, IconEdit, IconTrash, IconPackageExport } from '@tabler/icons-react'
+import { Stack, Title, Button, Group, NavLink, ActionIcon, Badge, Text, FileButton } from '@mantine/core'
+import { IconPlus, IconEdit, IconTrash, IconPackageExport, IconPackageImport } from '@tabler/icons-react'
 import { Deck } from '../api'
 
 interface DeckSelectorProps {
@@ -10,6 +10,7 @@ interface DeckSelectorProps {
   onRenameDeck: (id: number) => void
   onDeleteDeck: (id: number) => void
   onExport: () => void
+  onImport: (file: File) => void
 }
 
 export default function DeckSelector({
@@ -19,7 +20,8 @@ export default function DeckSelector({
   onCreateDeck,
   onRenameDeck,
   onDeleteDeck,
-  onExport
+  onExport,
+  onImport
 }: DeckSelectorProps) {
   return (
     <Stack gap="md" h="100%" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -69,16 +71,32 @@ export default function DeckSelector({
         ))}
       </Stack>
 
-      {currentDeckId && (
-        <Button
-          fullWidth
-          leftSection={<IconPackageExport size={16} />}
-          onClick={onExport}
-          color="green"
-        >
-          导出为 .apkg
-        </Button>
-      )}
+      <Stack gap="xs">
+        <FileButton onChange={(file) => file && onImport(file)} accept=".apkg">
+          {(props) => (
+            <Button
+              {...props}
+              fullWidth
+              leftSection={<IconPackageImport size={16} />}
+              variant="light"
+              color="blue"
+            >
+              导入 .apkg
+            </Button>
+          )}
+        </FileButton>
+
+        {currentDeckId && (
+          <Button
+            fullWidth
+            leftSection={<IconPackageExport size={16} />}
+            onClick={onExport}
+            color="green"
+          >
+            导出为 .apkg
+          </Button>
+        )}
+      </Stack>
     </Stack>
   )
 }

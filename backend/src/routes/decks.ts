@@ -1,9 +1,26 @@
 import express from 'express';
+import multer from 'multer';
+import path from 'path';
 import db from '../database';
 import { CreateDeckInput } from '../types';
 import { exportToAnki } from '../anki-export';
+import { importFromAnki } from '../anki-import';
 
 const router = express.Router();
+
+// 配置.apkg文件上传
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB限制
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext === '.apkg') {
+      cb(null, true);
+    } else {
+      cb(new Error('只支持.apkg文件'));
+    }
+  }
+});
 
 // 获取所有牌组
 router.get('/', async (req, res) => {
@@ -154,6 +171,56 @@ router.get('/:id/export', async (req, res) => {
   } catch (error) {
     console.error('导出失败:', error);
     res.status(500).json({ error: '导出牌组失败' });
+  }
+});
+
+// 导入.apkg文件
+router.post('/import', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: '没有上传文件' });
+    }
+
+    const uploadsDir = path.join(__dirname, '../../uploads');
+    const importedDeck = await importFromAnki(req.file.buffer, uploadsDir);
+
+    await db.read();
+
+    // 创建新牌组
+    const newDeck = {
+      id: db.data.nextDeckId++,
+      name: importedDeck.name,
+      description: '从.apkg文件导入',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    db.data.decks.push(newDeck);
+
+    // 导入卡片
+    for (const card of importedDeck.cards) {
+      const newCard = {
+        id: db.data.nextCardId++,
+        deck_id: newDeck.id,
+        front_text: card.front_text,
+        front_image: card.front_image,
+        back_text: card.back_text,
+        back_image: card.back_image,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      db.data.cards.push(newCard);
+    }
+
+    await db.write();
+
+    res.status(201).json({
+      deck: newDeck,
+      cardsImported: importedDeck.cards.length
+    });
+  } catch (error) {
+    console.error('导入失败:', error);
+    res.status(500).json({ error: '导入失败: ' + (error as Error).message });
   }
 });
 
