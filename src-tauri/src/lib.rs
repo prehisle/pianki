@@ -7,13 +7,12 @@ pub fn run() {
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_fs::init())
     .setup(|app| {
-      if cfg!(debug_assertions) {
-        app.handle().plugin(
-          tauri_plugin_log::Builder::default()
-            .level(log::LevelFilter::Info)
-            .build(),
-        )?;
-      }
+      // 总是启用日志插件（包括生产模式）
+      app.handle().plugin(
+        tauri_plugin_log::Builder::default()
+          .level(log::LevelFilter::Info)
+          .build(),
+      )?;
 
       // 获取应用数据目录
       let app_data_dir = app.path().app_data_dir().expect("Failed to get app data dir");
@@ -30,17 +29,30 @@ pub fn run() {
       // 只在生产模式下启动后端 sidecar
       // 开发模式下由 npm run dev 启动后端
       if !cfg!(debug_assertions) {
+        log::info!("启动后端服务器 sidecar...");
+        log::info!("数据目录: {}", app_data_dir.display());
+
         let sidecar_command = app.shell()
           .sidecar("pianki-backend")
-          .unwrap()
-          .env("PIANKI_DATA_DIR", app_data_dir.to_string_lossy().to_string());
+          .expect("Failed to create sidecar command")
+          .env("PIANKI_DATA_DIR", app_data_dir.to_string_lossy().to_string())
+          .env("PORT", "3001");
 
-        let (_rx, _child) = sidecar_command
-          .spawn()
-          .expect("Failed to spawn pianki-backend sidecar");
+        match sidecar_command.spawn() {
+          Ok((_rx, _child)) => {
+            log::info!("后端 sidecar 启动成功，等待服务器就绪...");
 
-        // 等待后端启动
-        std::thread::sleep(std::time::Duration::from_secs(2));
+            // 等待后端启动（增加等待时间到 5 秒）
+            std::thread::sleep(std::time::Duration::from_secs(5));
+
+            log::info!("后端服务器应该已就绪");
+          }
+          Err(e) => {
+            log::error!("启动后端 sidecar 失败: {}", e);
+            eprintln!("❌ 无法启动后端服务器: {}", e);
+            eprintln!("请检查日志文件: {}/pianki-backend.log", app_data_dir.display());
+          }
+        }
       }
 
       Ok(())

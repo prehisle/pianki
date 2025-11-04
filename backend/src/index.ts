@@ -1,12 +1,35 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { initDatabase, uploadsDir } from './database';
 import cardsRouter from './routes/cards';
 import decksRouter from './routes/decks';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// 设置日志文件
+const baseDataDir = process.env.PIANKI_DATA_DIR || path.join(__dirname, '..');
+const logFile = path.join(baseDataDir, 'pianki-backend.log');
+
+// 日志函数
+function log(message: string) {
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${timestamp}] ${message}\n`;
+  console.log(logMessage.trim());
+
+  try {
+    fs.appendFileSync(logFile, logMessage);
+  } catch (error) {
+    console.error('无法写入日志文件:', error);
+  }
+}
+
+log('=== Pianki 后端服务启动 ===');
+log(`数据目录: ${baseDataDir}`);
+log(`日志文件: ${logFile}`);
+log(`端口: ${PORT}`);
 
 // 中间件
 app.use(cors());
@@ -17,18 +40,42 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadsDir));
 
 // 初始化数据库
-initDatabase().then(() => {
-  // 路由
-  app.use('/api/cards', cardsRouter);
-  app.use('/api/decks', decksRouter);
+log('初始化数据库...');
+initDatabase()
+  .then(() => {
+    log('数据库初始化成功');
 
-  // 健康检查
-  app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'Pianki API is running' });
-  });
+    // 路由
+    app.use('/api/cards', cardsRouter);
+    app.use('/api/decks', decksRouter);
 
-  app.listen(PORT, () => {
-    console.log(`🚀 服务器运行在 http://localhost:${PORT}`);
-    console.log(`📡 API地址: http://localhost:${PORT}/api`);
+    // 健康检查
+    app.get('/api/health', (_req, res) => {
+      res.json({
+        status: 'ok',
+        message: 'Pianki API is running',
+        dataDir: baseDataDir,
+        uploadsDir: uploadsDir
+      });
+    });
+
+    // 错误处理
+    app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+      log(`错误: ${err.message}`);
+      log(`堆栈: ${err.stack}`);
+      res.status(500).json({ error: '服务器内部错误', message: err.message });
+    });
+
+    app.listen(PORT, () => {
+      log(`🚀 服务器成功启动！`);
+      log(`🌐 HTTP 地址: http://localhost:${PORT}`);
+      log(`📡 API 地址: http://localhost:${PORT}/api`);
+      log(`📁 上传目录: ${uploadsDir}`);
+      log('===========================');
+    });
+  })
+  .catch((error) => {
+    log(`❌ 数据库初始化失败: ${error.message}`);
+    log(`堆栈: ${error.stack}`);
+    process.exit(1);
   });
-});

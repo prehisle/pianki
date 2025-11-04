@@ -8,8 +8,10 @@ import CardEditor from './components/CardEditor'
 import CardList from './components/CardList'
 import DeckSelector from './components/DeckSelector'
 import ConfirmDialog from './components/ConfirmDialog'
+import ConnectionStatus from './components/ConnectionStatus'
 
 function App() {
+  const [backendConnected, setBackendConnected] = useState(false)
   const [decks, setDecks] = useState<Deck[]>([])
   const [currentDeckId, setCurrentDeckId] = useState<number | null>(null)
   const [cards, setCards] = useState<Card[]>([])
@@ -332,6 +334,11 @@ function App() {
       setIsCreating(false)
       setSwitchDeckConfirm({ isOpen: false, targetDeckId: null })
     }
+  }
+
+  // 检查后端连接状态
+  if (!backendConnected) {
+    return <ConnectionStatus onConnected={() => setBackendConnected(true)} />
   }
 
   return (
