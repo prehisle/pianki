@@ -65,17 +65,19 @@ jobs:
         run: |
           npx pkg backend/dist/index.js -t ${{ matrix.pkg_target }} -o src-tauri/binaries/pianki-backend-${{ matrix.target }} --compress Brotli
           chmod +x src-tauri/binaries/pianki-backend-${{ matrix.target }}
-          # 创建 Tauri 期望的文件名（不带平台后缀）
-          cp src-tauri/binaries/pianki-backend-${{ matrix.target }} src-tauri/binaries/pianki-backend
-          chmod +x src-tauri/binaries/pianki-backend
         shell: bash
 
       - name: Package backend binary (Windows)
         if: matrix.platform == 'windows-latest'
         run: |
           npx pkg backend/dist/index.js -t ${{ matrix.pkg_target }} -o src-tauri/binaries/pianki-backend-${{ matrix.target }}.exe --compress GZip
-          # 创建 Tauri 期望的文件名（不带平台后缀）
-          cp src-tauri/binaries/pianki-backend-${{ matrix.target }}.exe src-tauri/binaries/pianki-backend.exe
+        shell: bash
+
+      - name: Verify backend binary
+        run: |
+          echo "Listing src-tauri/binaries directory:"
+          ls -lah src-tauri/binaries/
+          echo "Target: ${{ matrix.target }}"
         shell: bash
 
       - name: Build Tauri app
