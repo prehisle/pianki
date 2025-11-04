@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
-import { AppShell, Title, Container, Button, Group, Text, Loader, Center } from '@mantine/core'
+import { AppShell, Title, Container, Button, Group, Text, Loader, Center, TextInput } from '@mantine/core'
 import { IconPlus } from '@tabler/icons-react'
+import { modals } from '@mantine/modals'
+import { notifications } from '@mantine/notifications'
 import { fetchDecks, fetchCards, createCard, updateCard, deleteCard, exportDeck, createDeck, updateDeck, deleteDeck, Deck, Card } from './api'
 import CardEditor from './components/CardEditor'
 import CardList from './components/CardList'
@@ -44,7 +46,11 @@ function App() {
       }
     } catch (error) {
       console.error('加载牌组失败:', error)
-      alert('加载牌组失败')
+      notifications.show({
+        title: '错误',
+        message: '加载牌组失败',
+        color: 'red',
+      })
     }
   }
 
@@ -56,39 +62,92 @@ function App() {
       setCards(data)
     } catch (error) {
       console.error('加载卡片失败:', error)
-      alert('加载卡片失败')
+      notifications.show({
+        title: '错误',
+        message: '加载卡片失败',
+        color: 'red',
+      })
     } finally {
       setLoading(false)
     }
   }
 
   const handleCreateDeck = async () => {
-    const name = prompt('请输入新牌组名称:')
-    if (!name) return
+    modals.openConfirmModal({
+      title: '创建新牌组',
+      children: (
+        <TextInput
+          label="牌组名称"
+          placeholder="请输入牌组名称"
+          data-autofocus
+          id="deck-name-input"
+        />
+      ),
+      labels: { confirm: '创建', cancel: '取消' },
+      onConfirm: async () => {
+        const input = document.getElementById('deck-name-input') as HTMLInputElement
+        const name = input?.value.trim()
+        if (!name) return
 
-    try {
-      await createDeck({ name })
-      await loadDecks()
-    } catch (error) {
-      console.error('创建牌组失败:', error)
-      alert('创建牌组失败')
-    }
+        try {
+          await createDeck({ name })
+          await loadDecks()
+          notifications.show({
+            title: '成功',
+            message: '牌组创建成功',
+            color: 'green',
+          })
+        } catch (error) {
+          console.error('创建牌组失败:', error)
+          notifications.show({
+            title: '错误',
+            message: '创建牌组失败',
+            color: 'red',
+          })
+        }
+      },
+    })
   }
 
   const handleRenameDeck = async (id: number) => {
     const deck = decks.find(d => d.id === id)
     if (!deck) return
 
-    const newName = prompt('请输入新名称:', deck.name)
-    if (!newName || newName === deck.name) return
+    modals.openConfirmModal({
+      title: '重命名牌组',
+      children: (
+        <TextInput
+          label="新名称"
+          placeholder="请输入新名称"
+          defaultValue={deck.name}
+          data-autofocus
+          id="deck-rename-input"
+        />
+      ),
+      labels: { confirm: '确定', cancel: '取消' },
+      onConfirm: async () => {
+        const input = document.getElementById('deck-rename-input') as HTMLInputElement
+        const newName = input?.value.trim()
+        if (!newName || newName === deck.name) return
 
-    try {
-      await updateDeck(id, { name: newName, description: deck.description })
-      await loadDecks()
-    } catch (error) {
-      console.error('重命名牌组失败:', error)
-      alert('重命名牌组失败')
-    }
+        try {
+          await updateDeck(id, { name: newName, description: deck.description })
+          await loadDecks()
+          notifications.show({
+            title: '成功',
+            message: '牌组重命名成功',
+            color: 'green',
+          })
+        } catch (error) {
+          console.error('重命名牌组失败:', error)
+          notifications.show({
+            title: '错误',
+            message: '重命名牌组失败',
+            color: 'red',
+          })
+        }
+      },
+    })
   }
 
   const handleDeleteDeck = (id: number) => {
@@ -108,9 +167,18 @@ function App() {
       }
 
       await loadDecks()
+      notifications.show({
+        title: '成功',
+        message: '牌组已删除',
+        color: 'green',
+      })
     } catch (error) {
       console.error('删除牌组失败:', error)
-      alert('删除牌组失败')
+      notifications.show({
+        title: '错误',
+        message: '删除牌组失败',
+        color: 'red',
+      })
     }
   }
 
@@ -127,9 +195,18 @@ function App() {
       await loadDecks() // 重新加载牌组列表以更新卡片计数
       setEditingCard(null)
       setIsCreating(false)
+      notifications.show({
+        title: '成功',
+        message: editingCard ? '卡片已更新' : '卡片已创建',
+        color: 'green',
+      })
     } catch (error) {
       console.error('保存卡片失败:', error)
-      alert('保存卡片失败')
+      notifications.show({
+        title: '错误',
+        message: '保存卡片失败',
+        color: 'red',
+      })
     }
   }
 
@@ -144,9 +221,18 @@ function App() {
       await deleteCard(deleteConfirm.cardId)
       await loadCards()
       await loadDecks() // 重新加载牌组列表以更新卡片计数
+      notifications.show({
+        title: '成功',
+        message: '卡片已删除',
+        color: 'green',
+      })
     } catch (error) {
       console.error('删除卡片失败:', error)
-      alert('删除卡片失败')
+      notifications.show({
+        title: '错误',
+        message: '删除卡片失败',
+        color: 'red',
+      })
     }
   }
 
@@ -162,9 +248,18 @@ function App() {
       a.download = `${deckName}.apkg`
       a.click()
       window.URL.revokeObjectURL(url)
+      notifications.show({
+        title: '成功',
+        message: '导出成功',
+        color: 'green',
+      })
     } catch (error) {
       console.error('导出失败:', error)
-      alert('导出失败: ' + (error as Error).message)
+      notifications.show({
+        title: '错误',
+        message: '导出失败: ' + (error as Error).message,
+        color: 'red',
+      })
     }
   }
 

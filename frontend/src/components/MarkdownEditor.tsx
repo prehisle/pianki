@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm'
 import TurndownService from 'turndown'
 import { uploadImage } from '../api'
 import { modals } from '@mantine/modals'
+import { notifications } from '@mantine/notifications'
 
 interface MarkdownEditorProps {
   value: string
@@ -44,8 +45,17 @@ export default function MarkdownEditor({ value, onChange, placeholder }: Markdow
       // 使用相对路径，不包含服务器地址
       const imageMarkdown = `![图片](${url})`
       insertAtCursor(imageMarkdown)
+      notifications.show({
+        title: '成功',
+        message: '图片上传成功',
+        color: 'green',
+      })
     } catch (error) {
-      alert('图片上传失败')
+      notifications.show({
+        title: '错误',
+        message: '图片上传失败',
+        color: 'red',
+      })
       console.error(error)
     }
   }
@@ -167,7 +177,7 @@ export default function MarkdownEditor({ value, onChange, placeholder }: Markdow
 
       <Grid gutter="md">
         <Grid.Col span={6}>
-          <Stack gap="xs">
+          <Stack gap="xs" h="100%">
             <Text size="sm" fw={500}>编辑</Text>
             <Textarea
               ref={textareaRef}
@@ -175,16 +185,28 @@ export default function MarkdownEditor({ value, onChange, placeholder }: Markdow
               onChange={(e) => onChange(e.currentTarget.value)}
               onPaste={handlePaste}
               placeholder={placeholder || '支持Markdown格式... 可直接粘贴图片'}
-              minRows={15}
-              autosize
-              maxRows={25}
+              rows={20}
+              styles={{
+                input: {
+                  height: '500px',
+                  minHeight: '500px',
+                }
+              }}
             />
           </Stack>
         </Grid.Col>
         <Grid.Col span={6}>
-          <Stack gap="xs">
+          <Stack gap="xs" h="100%">
             <Text size="sm" fw={500}>预览</Text>
-            <Paper withBorder p="md" mih={400} style={{ overflow: 'auto' }}>
+            <Paper
+              withBorder
+              p="md"
+              style={{
+                overflow: 'auto',
+                height: '500px',
+                minHeight: '500px',
+              }}
+            >
               {value ? (
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
