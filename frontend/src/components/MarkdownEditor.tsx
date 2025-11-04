@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Box, Textarea, Button, Group, Paper, Text, Stack, Grid, FileButton } from '@mantine/core'
+import { Textarea, Button, Group, Paper, Text, Stack, Grid, FileButton } from '@mantine/core'
 import { IconPhoto, IconBold, IconItalic, IconCode, IconHelp } from '@tabler/icons-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -40,7 +40,9 @@ export default function MarkdownEditor({ value, onChange, placeholder }: Markdow
     }, 0)
   }
 
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = async (file: File | null) => {
+    if (!file) return
+
     try {
       const url = await uploadImage(file)
       // 使用相对路径，不包含服务器地址

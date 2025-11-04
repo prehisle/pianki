@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { AppShell, Title, Container, Button, Group, Text, Loader, Center, TextInput, Select, SegmentedControl } from '@mantine/core'
-import { IconPlus, IconSortAscending, IconSortDescending } from '@tabler/icons-react'
+import { IconPlus } from '@tabler/icons-react'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
 import { fetchDecks, fetchCards, createCard, updateCard, deleteCard, exportDeck, importDeck, createDeck, updateDeck, deleteDeck, Deck, Card } from './api'

@@ -1,4 +1,4 @@
-import { Stack, Title, Button, Group, NavLink, ActionIcon, Badge, Text, FileButton } from '@mantine/core'
+import { Stack, Title, Button, Group, NavLink, ActionIcon, Text, FileButton } from '@mantine/core'
 import { IconPlus, IconEdit, IconTrash, IconPackageExport, IconPackageImport } from '@tabler/icons-react'
 import { Deck } from '../api'
 
