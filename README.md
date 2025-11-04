@@ -2,8 +2,9 @@
 
 一个现代化的Anki卡片制作Web应用，支持Markdown格式、实时预览、图片插入，可导出为标准.apkg格式。
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-0.1.3-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 
 ## ✨ 核心特性
 
@@ -26,8 +27,9 @@
 - 多牌组支持
 - 卡片创建、编辑、删除
 - 实时更新卡片计数
-- JSON文件数据库（LowDB）
+- 轻量级 JSON 文件数据库
 - 自动数据持久化
+- .apkg 文件导入/导出
 
 ### 📦 Anki导出
 - 导出为标准 .apkg 格式
@@ -84,10 +86,16 @@ npm start
 
 ### 后端
 - **运行时**: Node.js + Express + TypeScript
-- **数据库**: LowDB (JSON文件数据库)
+- **数据库**: 自定义 JSON 数据库（基于 fs/promises）
 - **文件上传**: Multer
 - **Markdown处理**: Marked
-- **Anki导出**: anki-apkg-export
+- **Anki 导入/导出**: anki-apkg-export + sql.js
+
+### 桌面应用（Tauri）
+- **框架**: Tauri 2.x
+- **架构**: Sidecar 模式（Node.js 后端作为独立进程）
+- **打包工具**: @yao-pkg/pkg
+- **平台支持**: Windows, macOS, Linux
 
 ## 📖 使用说明
 
@@ -187,7 +195,7 @@ pianki/
 
 ### 数据库操作
 
-项目使用LowDB，这是一个基于JSON文件的轻量级数据库：
+项目使用自定义的 `JsonDatabase` 类，基于 Node.js 原生 `fs/promises` API：
 
 ```typescript
 import db from './database'
@@ -200,7 +208,16 @@ db.data.cards.push(newCard)
 
 // 保存到文件
 await db.write()
+
+// 重置为默认数据
+db.resetToDefaults()
 ```
+
+**优势**：
+- 零额外依赖，使用 Node.js 原生 API
+- 更好的 pkg 打包兼容性
+- 完整的 TypeScript 泛型支持
+- 自动错误恢复机制
 
 ### Markdown到Anki的转换流程
 
@@ -238,10 +255,11 @@ MIT License
 
 ## 🙏 致谢
 
-- [anki-apkg-export](https://github.com/repeat-space/anki-apkg-export) - Anki包导出库
-- [react-markdown](https://github.com/remarkjs/react-markdown) - React Markdown渲染
-- [marked](https://github.com/markedjs/marked) - Markdown解析器
-- [lowdb](https://github.com/typicode/lowdb) - 轻量级JSON数据库
+- [anki-apkg-export](https://github.com/repeat-space/anki-apkg-export) - Anki 包导出库
+- [react-markdown](https://github.com/remarkjs/react-markdown) - React Markdown 渲染
+- [marked](https://github.com/markedjs/marked) - Markdown 解析器
+- [Tauri](https://tauri.app/) - 跨平台桌面应用框架
+- [sql.js](https://github.com/sql-js/sql.js) - SQLite Wasm 实现（用于 .apkg 导入）
 
 ---
 

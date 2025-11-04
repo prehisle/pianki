@@ -88,10 +88,65 @@ com.pianki.app/
 - `PIANKI_DATA_DIR`: 数据目录路径（在 Tauri 应用中自动设置）
 - `PORT`: 后端服务器端口（默认 3001）
 
-## 已知问题
+## 已解决的问题
+
+### 1. ESM 模块打包问题（已解决）
+
+**问题**: lowdb v7.x 是 ESM 模块，pkg 无法正确打包，导致 `Cannot find module 'lowdb'` 错误
+
+**解决方案**:
+- 完全移除 lowdb 依赖
+- 实现自定义 `JsonDatabase` 类，基于 Node.js 原生 `fs/promises` API
+- 零额外依赖，完美兼容 pkg 打包
+
+### 2. Tauri 环境 API 请求路径问题（已解决）
+
+**问题**: 在 Tauri 打包后的应用中，前端使用相对路径 `/api` 请求后端时，实际解析为 `tauri://localhost/api`，无法连接到 Express 后端
+
+**原因**:
+- Tauri 使用自定义协议（tauri:// 或 app://）加载前端资源
+- Vite proxy 配置在生产环境不生效
+- 相对路径请求无法到达 http://localhost:3001 的后端
+
+**解决方案**:
+```typescript
+// frontend/src/api.ts
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (window.__TAURI_IPC__ ? 'http://localhost:3001/api' : '/api')
+```
+
+### 3. 数据库初始化问题（已解决）
+
+**问题**: 首次安装时，数据库文件不存在或损坏，导致前端报错 `e.map is not a function`
+
+**解决方案**:
+- 增强数据库初始化逻辑，自动检测和修复损坏的数据
+- 添加防御性检查，确保 API 始终返回数组
+- 详细的错误日志，便于问题诊断
+
+### 4. 开发者工具无法打开（已解决）
+
+**问题**: 生产构建中，Ctrl+Shift+I 无法打开开发者工具
+
+**解决方案**:
+```toml
+# src-tauri/Cargo.toml
+tauri = { version = "2.9.2", features = ["devtools"] }
+
+# src-tauri/tauri.conf.json
+{
+  "app": {
+    "windows": [{ "devtools": true }],
+    "withGlobalTauri": true
+  }
+}
+```
+
+## 当前已知问题
 
 1. **开发模式**: 需要手动启动后端服务器
-2. **首次启动**: 后端 sidecar 启动需要约 2 秒，请耐心等待
+2. **首次启动**: 后端 sidecar 启动需要约 5 秒，请耐心等待
 3. **打包体积**: 包含 Node.js 运行时，安装包约 60-90MB
 
 ## 常用命令
