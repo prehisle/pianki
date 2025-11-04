@@ -63,6 +63,8 @@ export async function importFromAnki(apkgBuffer: Buffer, uploadsDir: string): Pr
 
       // 处理图片引用
       const processField = async (field: string): Promise<{ text?: string; image?: string }> => {
+        let imagePath: string | undefined;
+
         // 检查是否包含图片标签
         const imgRegex = /<img[^>]+src="([^"]+)"/g;
         const matches = field.match(imgRegex);
@@ -79,9 +81,9 @@ export async function importFromAnki(apkgBuffer: Buffer, uploadsDir: string): Pr
                 const imageBuffer = await imageFile.async('nodebuffer');
                 const ext = path.extname(imageName);
                 const newFileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`;
-                const imagePath = path.join(uploadsDir, newFileName);
-                await fs.writeFile(imagePath, imageBuffer);
-                return { image: `/uploads/${newFileName}` };
+                const fullPath = path.join(uploadsDir, newFileName);
+                await fs.writeFile(fullPath, imageBuffer);
+                imagePath = `/uploads/${newFileName}`;
               } catch (e) {
                 console.error('保存图片失败:', e);
               }
@@ -91,7 +93,13 @@ export async function importFromAnki(apkgBuffer: Buffer, uploadsDir: string): Pr
 
         // 移除HTML标签，保留文本
         const text = field.replace(/<[^>]+>/g, '').trim();
-        return text ? { text } : {};
+
+        // 返回文字和图片（如果有）
+        const result: { text?: string; image?: string } = {};
+        if (text) result.text = text;
+        if (imagePath) result.image = imagePath;
+
+        return result;
       };
 
       // 处理正面和背面

@@ -65,14 +65,23 @@ export default function CardList({ cards, onEdit, onDelete }: CardListProps) {
             <Grid.Col span={6}>
               <Stack gap="xs">
                 <Badge variant="light" size="sm">正面</Badge>
-                {card.front_text ? (
+                {card.front_text || card.front_image ? (
                   <Box style={{ fontSize: '0.875rem' }}>
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{ img: imageRenderer }}
-                    >
-                      {card.front_text}
-                    </ReactMarkdown>
+                    {card.front_image && (
+                      <img
+                        src={`http://localhost:3001${card.front_image}`}
+                        alt="正面图片"
+                        style={{ maxWidth: '100%', marginBottom: '0.5rem' }}
+                      />
+                    )}
+                    {card.front_text && (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{ img: imageRenderer }}
+                      >
+                        {card.front_text}
+                      </ReactMarkdown>
+                    )}
                   </Box>
                 ) : (
                   <Text size="sm" c="dimmed">无内容</Text>
@@ -82,14 +91,23 @@ export default function CardList({ cards, onEdit, onDelete }: CardListProps) {
             <Grid.Col span={6}>
               <Stack gap="xs">
                 <Badge variant="light" size="sm" color="teal">反面</Badge>
-                {card.back_text ? (
+                {card.back_text || card.back_image ? (
                   <Box style={{ fontSize: '0.875rem' }}>
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{ img: imageRenderer }}
-                    >
-                      {card.back_text}
-                    </ReactMarkdown>
+                    {card.back_image && (
+                      <img
+                        src={`http://localhost:3001${card.back_image}`}
+                        alt="背面图片"
+                        style={{ maxWidth: '100%', marginBottom: '0.5rem' }}
+                      />
+                    )}
+                    {card.back_text && (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{ img: imageRenderer }}
+                      >
+                        {card.back_text}
+                      </ReactMarkdown>
+                    )}
                   </Box>
                 ) : (
                   <Text size="sm" c="dimmed">无内容</Text>
