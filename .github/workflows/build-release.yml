@@ -87,6 +87,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Pianki v__VERSION__'
+          args: ${{ matrix.platform == 'macos-latest' && format('--target {0}', matrix.target) || '' }}
           releaseBody: |
             ## Pianki ${{ github.ref_name }}
 
