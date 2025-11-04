@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Pianki",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "identifier": "com.pianki.app",
   "build": {
     "frontendDist": "../frontend/dist",
@@ -19,9 +19,11 @@
         "minHeight": 600,
         "resizable": true,
         "fullscreen": false,
-        "center": true
+        "center": true,
+        "devtools": true
       }
     ],
+    "withGlobalTauri": true,
     "security": {
       "csp": null
     }
