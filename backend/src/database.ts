@@ -51,15 +51,44 @@ const adapter = new JSONFile<Database>(DB_PATH)
 export const db = new Low<Database>(adapter, defaultData)
 
 export async function initDatabase() {
-  await db.read()
+  try {
+    await db.read()
 
-  // 如果数据库为空，使用默认数据
-  if (!db.data) {
-    db.data = defaultData
-    await db.write()
+    // 确保数据库结构完整
+    if (!db.data || typeof db.data !== 'object') {
+      console.log('数据库为空或损坏，使用默认数据')
+      db.data = defaultData
+      await db.write()
+    } else {
+      // 确保关键字段存在且为数组
+      if (!Array.isArray(db.data.decks)) {
+        console.log('修复 decks 字段')
+        db.data.decks = defaultData.decks
+      }
+      if (!Array.isArray(db.data.cards)) {
+        console.log('修复 cards 字段')
+        db.data.cards = []
+      }
+      if (typeof db.data.nextDeckId !== 'number') {
+        db.data.nextDeckId = (db.data.decks.length > 0
+          ? Math.max(...db.data.decks.map(d => d.id)) + 1
+          : 1)
+      }
+      if (typeof db.data.nextCardId !== 'number') {
+        db.data.nextCardId = (db.data.cards.length > 0
+          ? Math.max(...db.data.cards.map(c => c.id)) + 1
+          : 1)
+      }
+      await db.write()
+    }
+
+    console.log('✅ 数据库初始化完成')
+    console.log(`   - 牌组数量: ${db.data.decks.length}`)
+    console.log(`   - 卡片数量: ${db.data.cards.length}`)
+  } catch (error) {
+    console.error('❌ 数据库初始化失败:', error)
+    throw error
   }
-
-  console.log('✅ 数据库初始化完成')
 }
 
 export default db

@@ -27,9 +27,13 @@ router.get('/', async (req, res) => {
   try {
     await db.read();
 
-    const decksWithCount = db.data.decks.map(deck => ({
+    // 防御性检查：确保 decks 和 cards 是数组
+    const decks = Array.isArray(db.data?.decks) ? db.data.decks : [];
+    const cards = Array.isArray(db.data?.cards) ? db.data.cards : [];
+
+    const decksWithCount = decks.map(deck => ({
       ...deck,
-      card_count: db.data.cards.filter(c => c.deck_id === deck.id).length
+      card_count: cards.filter(c => c.deck_id === deck.id).length
     }));
 
     // 按创建时间倒序排列
@@ -37,6 +41,7 @@ router.get('/', async (req, res) => {
 
     res.json(decksWithCount);
   } catch (error) {
+    console.error('获取牌组失败:', error);
     res.status(500).json({ error: '获取牌组失败' });
   }
 });

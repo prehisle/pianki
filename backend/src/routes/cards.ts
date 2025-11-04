@@ -38,7 +38,9 @@ router.get('/', async (req, res) => {
   try {
     await db.read();
     const { deck_id } = req.query;
-    let cards = db.data.cards;
+
+    // 防御性检查：确保 cards 是数组
+    let cards = Array.isArray(db.data?.cards) ? db.data.cards : [];
 
     if (deck_id) {
       cards = cards.filter(c => c.deck_id === parseInt(deck_id as string));
@@ -49,6 +51,7 @@ router.get('/', async (req, res) => {
 
     res.json(cards);
   } catch (error) {
+    console.error('获取卡片失败:', error);
     res.status(500).json({ error: '获取卡片失败' });
   }
 });
