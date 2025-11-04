@@ -7,6 +7,7 @@ import TurndownService from 'turndown'
 import { uploadImage } from '../api'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
+import '../styles/markdown.css'
 
 interface MarkdownEditorProps {
   value: string
@@ -208,16 +209,15 @@ export default function MarkdownEditor({ value, onChange, placeholder }: Markdow
               }}
             >
               {value ? (
-                <div style={{ paddingLeft: '0.5em' }}>
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      img: imageRenderer
-                    }}
-                  >
-                    {value}
-                  </ReactMarkdown>
-                </div>
+                <ReactMarkdown
+                  className="markdown-content"
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    img: imageRenderer
+                  }}
+                >
+                  {value}
+                </ReactMarkdown>
               ) : (
                 <Text c="dimmed" size="sm">实时预览...</Text>
               )}

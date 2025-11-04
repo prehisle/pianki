@@ -3,6 +3,7 @@ import { IconEdit, IconTrash, IconClock, IconClockEdit } from '@tabler/icons-rea
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Card } from '../api'
+import '../styles/markdown.css'
 
 interface CardListProps {
   cards: Card[]
@@ -76,6 +77,7 @@ export default function CardList({ cards, onEdit, onDelete }: CardListProps) {
                     )}
                     {card.front_text && (
                       <ReactMarkdown
+                        className="markdown-content"
                         remarkPlugins={[remarkGfm]}
                         components={{ img: imageRenderer }}
                       >
@@ -102,6 +104,7 @@ export default function CardList({ cards, onEdit, onDelete }: CardListProps) {
                     )}
                     {card.back_text && (
                       <ReactMarkdown
+                        className="markdown-content"
                         remarkPlugins={[remarkGfm]}
                         components={{ img: imageRenderer }}
                       >
