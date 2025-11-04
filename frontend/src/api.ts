@@ -1,6 +1,11 @@
 import axios from 'axios'
 
-const API_BASE_URL = '/api'
+// 在 Tauri 环境中使用绝对 URL，开发环境使用相对路径（通过 Vite proxy）
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (typeof window !== 'undefined' && (window as any).__TAURI_IPC__
+    ? 'http://localhost:3001/api'
+    : '/api')
 
 export interface Deck {
   id: number
