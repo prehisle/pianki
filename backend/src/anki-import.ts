@@ -1,5 +1,4 @@
 import JSZip from 'jszip';
-import initSqlJs from 'sql.js';
 import path from 'path';
 import fs from 'fs/promises';
 
@@ -31,8 +30,11 @@ export async function importFromAnki(apkgBuffer: Buffer, uploadsDir: string): Pr
 
     // 读取SQLite数据库
     const dbBuffer = await collectionFile.async('nodebuffer');
+
+    // 动态require sql.js以避免ES模块问题
+    const initSqlJs = require('sql.js');
     const SQL = await initSqlJs();
-    const db = new SQL.Database(dbBuffer);
+    const db = new SQL.Database(new Uint8Array(dbBuffer));
 
     // 提取牌组名称
     const deckNameResult = db.exec('SELECT decks FROM col');

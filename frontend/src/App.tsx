@@ -259,13 +259,18 @@ function App() {
       a.href = url
       const deckName = decks.find(d => d.id === currentDeckId)?.name || 'deck'
       a.download = `${deckName}.apkg`
+
+      // 等待下载触发后再显示成功提示
+      setTimeout(() => {
+        notifications.show({
+          title: '成功',
+          message: '导出成功',
+          color: 'green',
+        })
+      }, 500)
+
       a.click()
       window.URL.revokeObjectURL(url)
-      notifications.show({
-        title: '成功',
-        message: '导出成功',
-        color: 'green',
-      })
     } catch (error) {
       console.error('导出失败:', error)
       notifications.show({
