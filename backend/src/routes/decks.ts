@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import db from '../database';
+import db, { uploadsDir } from '../database';
 import { CreateDeckInput } from '../types';
 import { exportToAnki } from '../anki-export';
 import { importFromAnki } from '../anki-import';
@@ -181,7 +181,6 @@ router.post('/import', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: '没有上传文件' });
     }
 
-    const uploadsDir = path.join(__dirname, '../../uploads');
     const importedDeck = await importFromAnki(req.file.buffer, uploadsDir);
 
     await db.read();

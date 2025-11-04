@@ -12,12 +12,26 @@
     "dev:backend": "npm run dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
     "build": "npm run build --workspace=frontend && npm run build --workspace=backend",
-    "start": "npm run start --workspace=backend"
+    "start": "npm run start --workspace=backend",
+    "package:backend": "npm run build --workspace=backend && pkg backend/dist/index.js -t node18-macos-arm64,node18-macos-x64,node18-linux-x64,node18-linux-arm64,node18-win-x64 -o src-tauri/binaries/pianki-backend --compress Brotli",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
-  "keywords": ["anki", "flashcards", "learning"],
-  "author": "",
+  "keywords": [
+    "anki",
+    "flashcards",
+    "learning"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/prehisle/pianki.git"
+  },
+  "author": "prehisle",
   "license": "MIT",
   "devDependencies": {
+    "@tauri-apps/cli": "^2.9.2",
+    "@yao-pkg/pkg": "^6.10.1",
     "concurrently": "^8.2.2"
   }
 }

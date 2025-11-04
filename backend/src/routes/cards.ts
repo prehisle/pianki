@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import db from '../database';
+import db, { uploadsDir } from '../database';
 import { CreateCardInput, UpdateCardInput } from '../types';
 
 const router = express.Router();
@@ -9,7 +9,7 @@ const router = express.Router();
 // 配置图片上传
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../uploads'));
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);

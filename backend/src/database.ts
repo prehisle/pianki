@@ -11,19 +11,25 @@ interface Database {
   nextCardId: number
 }
 
-const DB_PATH = path.join(__dirname, '../data/db.json')
+// 获取数据目录：优先使用环境变量，否则使用默认路径
+const baseDataDir = process.env.PIANKI_DATA_DIR || path.join(__dirname, '..')
+const dataDir = path.join(baseDataDir, 'data')
+const uploadsDir = path.join(baseDataDir, 'uploads')
+
+const DB_PATH = path.join(dataDir, 'db.json')
 
 // 确保数据目录存在
-const dataDir = path.dirname(DB_PATH)
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true })
 }
 
 // 确保上传目录存在
-const uploadsDir = path.join(__dirname, '../uploads')
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true })
 }
+
+// 导出路径以供其他模块使用
+export { uploadsDir }
 
 // 默认数据
 const defaultData: Database = {

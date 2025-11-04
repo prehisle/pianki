@@ -3,6 +3,7 @@ import { marked } from 'marked';
 import path from 'path';
 import fs from 'fs';
 import { Deck, Card } from './types';
+import { uploadsDir } from './database';
 
 // 从Markdown文本中提取图片URL
 function extractImageUrls(markdown: string): string[] {
@@ -154,7 +155,8 @@ function processContent(markdown: string, apkg: any): string {
   for (const imageUrl of imageUrls) {
     // 检查是否是本地上传的图片（相对路径）
     if (imageUrl.startsWith('/uploads/')) {
-      const fullPath = path.join(__dirname, '../', imageUrl);
+      const fileName = imageUrl.replace('/uploads/', '');
+      const fullPath = path.join(uploadsDir, fileName);
 
       if (fs.existsSync(fullPath)) {
         const imageData = fs.readFileSync(fullPath);
@@ -186,7 +188,8 @@ export async function exportToAnki(deck: Deck, cards: Card[]): Promise<Buffer> {
 
     // 处理正面图片
     if (card.front_image) {
-      const fullPath = path.join(__dirname, '../', card.front_image);
+      const fileName = card.front_image.replace('/uploads/', '');
+      const fullPath = path.join(uploadsDir, fileName);
       if (fs.existsSync(fullPath)) {
         const imageData = fs.readFileSync(fullPath);
         const imageName = path.basename(card.front_image);
@@ -197,7 +200,8 @@ export async function exportToAnki(deck: Deck, cards: Card[]): Promise<Buffer> {
 
     // 处理背面图片
     if (card.back_image) {
-      const fullPath = path.join(__dirname, '../', card.back_image);
+      const fileName = card.back_image.replace('/uploads/', '');
+      const fullPath = path.join(uploadsDir, fileName);
       if (fs.existsSync(fullPath)) {
         const imageData = fs.readFileSync(fullPath);
         const imageName = path.basename(card.back_image);

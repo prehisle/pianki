@@ -1,0 +1,59 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Pianki",
+  "version": "0.1.0",
+  "identifier": "com.pianki.app",
+  "build": {
+    "frontendDist": "../frontend/dist",
+    "devUrl": "http://localhost:3000",
+    "beforeDevCommand": "npm run dev:frontend",
+    "beforeBuildCommand": "npm run build && npm run package:backend"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Pianki - Anki 卡片管理",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "externalBin": [
+      "binaries/pianki-backend"
+    ],
+    "category": "Productivity",
+    "shortDescription": "Anki 卡片快速制作工具",
+    "longDescription": "Pianki 是一个高效的 Anki 卡片制作工具，支持快速创建、编辑和导出 Anki 卡片。",
+    "macOS": {
+      "minimumSystemVersion": "10.13"
+    },
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    },
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    }
+  }
+}

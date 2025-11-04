@@ -11,3 +11,8 @@ uploads/
 .idea/
 db.json
 backend/data/db.json
+
+# Tauri 相关
+src-tauri/target/
+src-tauri/binaries/
+src-tauri/gen/
