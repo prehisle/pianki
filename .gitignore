@@ -16,3 +16,5 @@ backend/data/db.json
 src-tauri/target/
 src-tauri/binaries/
 src-tauri/gen/
+backend/data/db copy.json
+tmp/
