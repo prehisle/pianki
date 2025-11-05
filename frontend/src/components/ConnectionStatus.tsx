@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Alert, Loader, Stack, Text, Code, Button } from '@mantine/core'
 import { IconAlertCircle, IconRefresh } from '@tabler/icons-react'
 
@@ -10,6 +10,7 @@ export default function ConnectionStatus({ onConnected }: ConnectionStatusProps)
   const [isConnected, setIsConnected] = useState<boolean | null>(null)
   const [error, setError] = useState<string>('')
   const [retryCount, setRetryCount] = useState(0)
+  const timerRef = useRef<number | null>(null)
 
   const checkConnection = async () => {
     try {
@@ -35,19 +36,44 @@ export default function ConnectionStatus({ onConnected }: ConnectionStatusProps)
   }
 
   useEffect(() => {
-    // 初始检查
-    checkConnection()
-
-    // 如果连接失败，定期重试
-    const interval = setInterval(() => {
-      if (isConnected === false) {
-        setRetryCount(prev => prev + 1)
-        checkConnection()
+    // 清理函数
+    const clearTimer = () => {
+      if (timerRef.current != null) {
+        window.clearTimeout(timerRef.current)
+        timerRef.current = null
       }
-    }, 3000)
+    }
 
-    return () => clearInterval(interval)
-  }, [isConnected])
+    // 安排下一次检查：前几次快速重试，随后退避到 3 秒
+    const scheduleNext = (attempt: number) => {
+      const delays = [300, 600, 1200, 2400]
+      const delay = attempt < delays.length ? delays[attempt] : 3000
+      timerRef.current = window.setTimeout(async () => {
+        setRetryCount(prev => prev + 1)
+        await checkConnection()
+      }, delay) as unknown as number
+    }
+
+    // 状态机：
+    //  - 初次挂载或断开 -> 立即检查，然后根据结果调度
+    //  - 已连接 -> 不再调度
+    clearTimer()
+    if (isConnected === true) {
+      return () => clearTimer()
+    }
+
+    if (isConnected === null) {
+      // 首次：立即检查，然后进入重试节奏
+      checkConnection().then(() => {
+        if (isConnected !== true) scheduleNext(0)
+      })
+    } else if (isConnected === false) {
+      scheduleNext(retryCount)
+    }
+
+    return () => clearTimer()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, retryCount])
 
   // 正在检查连接
   if (isConnected === null) {

@@ -3,8 +3,6 @@ import multer from 'multer';
 import path from 'path';
 import { uploadsDir } from '../database';
 import { CreateDeckInput } from '../types';
-import { exportToAnki } from '../anki-export';
-import { importFromAnki } from '../anki-import';
 import {
   listDecksWithCounts,
   getDeckWithCount,
@@ -126,6 +124,8 @@ router.get('/:id/export', async (req, res) => {
     }
 
     const { card_count: _cardCount, ...deck } = deckWithCount;
+    // 动态导入，避免后端冷启动加载重型依赖
+    const { exportToAnki } = await import('../anki-export');
     const apkgBuffer = await exportToAnki(deck, cards);
 
     res.setHeader('Content-Type', 'application/apkg');
@@ -144,6 +144,8 @@ router.post('/import', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: '没有上传文件' });
     }
 
+    // 动态导入，避免后端冷启动加载重型依赖
+    const { importFromAnki } = await import('../anki-import');
     const importedDeck = await importFromAnki(req.file.buffer, uploadsDir);
 
     const newDeck = createDeckRecord({

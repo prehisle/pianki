@@ -87,9 +87,14 @@ pub fn run() {
                             }
                         });
 
-                        wait_for_backend_ready(Duration::from_secs(5));
-
-                        log::info!("后端服务器应该已就绪");
+                        // 不阻塞窗口显示：后台等待后端就绪，仅用于日志提示
+                        let handle_for_log = app.handle().clone();
+                        std::thread::spawn(move || {
+                            wait_for_backend_ready(Duration::from_secs(5));
+                            log::info!("后端服务器应该已就绪");
+                            // 如需通知前端，可在此发事件：
+                            // let _ = handle_for_log.emit_all("backend-ready", ());
+                        });
                     }
                     Err(e) => {
                         log::error!("启动后端 sidecar 失败: {}", e);
