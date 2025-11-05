@@ -77,7 +77,7 @@ npm run tauri:build
 ```
 com.pianki.app/
 ├── data/
-│   └── db.json       # LowDB 数据库
+│   └── pianki.db     # SQLite 数据库
 └── uploads/          # 上传的图片文件
 ```
 
@@ -92,12 +92,12 @@ com.pianki.app/
 
 ### 1. ESM 模块打包问题（已解决）
 
-**问题**: lowdb v7.x 是 ESM 模块，pkg 无法正确打包，导致 `Cannot find module 'lowdb'` 错误
+**问题**: 早期版本使用 lowdb(JSON) 存储，pkg 打包存在兼容性问题，且性能受限。
 
 **解决方案**:
-- 完全移除 lowdb 依赖
-- 实现自定义 `JsonDatabase` 类，基于 Node.js 原生 `fs/promises` API
-- 零额外依赖，完美兼容 pkg 打包
+- 替换为 SQLite 数据库，使用 `better-sqlite3` 原生驱动
+- 保留自动迁移脚本，首次运行可无感知更新
+- 继续兼容 pkg/Tauri 打包，并提升数据可靠性
 
 ### 2. Tauri 环境 API 请求路径问题（已解决）
 

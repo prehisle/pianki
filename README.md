@@ -158,13 +158,15 @@ pianki/
 │   │   ├── routes/           # API路由
 │   │   │   ├── cards.ts      # 卡片路由
 │   │   │   └── decks.ts      # 牌组路由
-│   │   ├── database.ts       # 数据库配置
+│   │   ├── database.ts       # 数据库初始化
 │   │   ├── anki-export.ts    # Anki导出逻辑
 │   │   ├── types.ts          # TypeScript类型
 │   │   └── index.ts          # 服务器入口
 │   ├── data/                 # 数据存储（自动生成）
-│   │   └── db.json           # JSON数据库
+│   │   └── pianki.db         # SQLite 数据库
 │   ├── uploads/              # 上传的图片（自动生成）
+│   ├── scripts/              # 数据迁移脚本
+│   │   └── migrate-json-to-sqlite.ts
 │   └── package.json
 │
 ├── package.json              # 根配置文件
@@ -178,8 +180,9 @@ pianki/
 - 后端: http://localhost:3001
 
 ### 数据存储位置
-- 数据库: `backend/data/db.json`
+- 数据库: `backend/data/pianki.db`
 - 上传图片: `backend/uploads/`
+- 旧版 JSON 备份（迁移时自动生成）: `backend/data/db.json.bak-*`
 
 ### 图片限制
 - 最大文件大小: 5MB
@@ -195,29 +198,28 @@ pianki/
 
 ### 数据库操作
 
-项目使用自定义的 `JsonDatabase` 类，基于 Node.js 原生 `fs/promises` API：
+后端数据已迁移到 SQLite，所有读写通过仓库函数完成，例如：
 
 ```typescript
-import db from './database'
+import { createDeck } from './db/repositories/decks';
+import { createCard } from './db/repositories/cards';
 
-// 读取数据
-await db.read()
-
-// 修改数据
-db.data.cards.push(newCard)
-
-// 保存到文件
-await db.write()
-
-// 重置为默认数据
-db.resetToDefaults()
+const deck = createDeck({ name: '示例牌组' });
+createCard({
+  deck_id: deck.id,
+  front_text: 'Question',
+  back_text: 'Answer'
+});
 ```
 
-**优势**：
-- 零额外依赖，使用 Node.js 原生 API
-- 更好的 pkg 打包兼容性
-- 完整的 TypeScript 泛型支持
-- 自动错误恢复机制
+如果仍保存着旧版 `db.json`，可以执行迁移脚本：
+
+```bash
+cd backend
+npm run migrate:sqlite
+```
+
+脚本会自动备份 JSON 并写入 `backend/data/pianki.db`。
 
 ### Markdown到Anki的转换流程
 
@@ -232,10 +234,10 @@ db.resetToDefaults()
 ## 🐛 常见问题
 
 **Q: 数据保存在哪里？**
-A: 所有数据保存在 `backend/data/db.json` 文件中，图片保存在 `backend/uploads/` 目录。
+A: 数据库文件位于 `backend/data/pianki.db`，图片保存在 `backend/uploads/` 目录。
 
 **Q: 如何备份数据？**
-A: 复制 `backend/data/db.json` 和 `backend/uploads/` 目录即可。
+A: 复制 `backend/data/pianki.db` 和 `backend/uploads/` 目录即可（若仍有 `.bak` 的 JSON 文件一并备份更安全）。
 
 **Q: 导出的.apkg文件在Anki中无法打开？**
 A: 确保：

@@ -1,8 +1,15 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import db, { uploadsDir } from '../database';
+import { uploadsDir } from '../database';
 import { CreateCardInput, UpdateCardInput } from '../types';
+import {
+  listCards as listCardsRepo,
+  getCardById,
+  createCard as createCardRecord,
+  updateCard as updateCardRecord,
+  deleteCard as deleteCardRecord
+} from '../db/repositories/cards';
 
 const router = express.Router();
 
@@ -34,21 +41,11 @@ const upload = multer({
 });
 
 // 获取所有卡片
-router.get('/', async (req, res) => {
+router.get('/', (req, res) => {
   try {
-    await db.read();
     const { deck_id } = req.query;
-
-    // 防御性检查：确保 cards 是数组
-    let cards = Array.isArray(db.data?.cards) ? db.data.cards : [];
-
-    if (deck_id) {
-      cards = cards.filter(c => c.deck_id === parseInt(deck_id as string));
-    }
-
-    // 按创建时间倒序排列
-    cards.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
+    const deckId = deck_id ? Number.parseInt(deck_id as string, 10) : undefined;
+    const cards = listCardsRepo({ deckId });
     res.json(cards);
   } catch (error) {
     console.error('获取卡片失败:', error);
@@ -57,10 +54,10 @@ router.get('/', async (req, res) => {
 });
 
 // 获取单个卡片
-router.get('/:id', async (req, res) => {
+router.get('/:id', (req, res) => {
   try {
-    await db.read();
-    const card = db.data.cards.find(c => c.id === parseInt(req.params.id));
+    const cardId = Number.parseInt(req.params.id, 10);
+    const card = getCardById(cardId);
     if (!card) {
       return res.status(404).json({ error: '卡片不存在' });
     }
@@ -71,29 +68,21 @@ router.get('/:id', async (req, res) => {
 });
 
 // 创建卡片
-router.post('/', async (req, res) => {
+router.post('/', (req, res) => {
   try {
     const { deck_id, front_text, front_image, back_text, back_image }: CreateCardInput = req.body;
 
     if (!deck_id) {
-      return res.status(400).json({ error: '缺少deck_id' });
+      return res.status(400).json({ error: '缺少 deck_id' });
     }
 
-    await db.read();
-
-    const newCard = {
-      id: db.data.nextCardId++,
+    const newCard = createCardRecord({
       deck_id,
-      front_text: front_text || undefined,
-      front_image: front_image || undefined,
-      back_text: back_text || undefined,
-      back_image: back_image || undefined,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    db.data.cards.push(newCard);
-    await db.write();
+      front_text,
+      front_image,
+      back_text,
+      back_image
+    });
 
     res.status(201).json(newCard);
   } catch (error) {
@@ -102,50 +91,28 @@ router.post('/', async (req, res) => {
 });
 
 // 更新卡片
-router.put('/:id', async (req, res) => {
+router.put('/:id', (req, res) => {
   try {
-    const { front_text, front_image, back_text, back_image }: UpdateCardInput = req.body;
-    const cardId = parseInt(req.params.id);
-
-    await db.read();
-
-    const cardIndex = db.data.cards.findIndex(c => c.id === cardId);
-    if (cardIndex === -1) {
+    const cardId = Number.parseInt(req.params.id, 10);
+    const payload: UpdateCardInput = req.body;
+    const updated = updateCardRecord(cardId, payload);
+    if (!updated) {
       return res.status(404).json({ error: '卡片不存在' });
     }
-
-    db.data.cards[cardIndex] = {
-      ...db.data.cards[cardIndex],
-      front_text: front_text || undefined,
-      front_image: front_image || undefined,
-      back_text: back_text || undefined,
-      back_image: back_image || undefined,
-      updated_at: new Date().toISOString()
-    };
-
-    await db.write();
-
-    res.json(db.data.cards[cardIndex]);
+    res.json(updated);
   } catch (error) {
     res.status(500).json({ error: '更新卡片失败' });
   }
 });
 
 // 删除卡片
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', (req, res) => {
   try {
-    const cardId = parseInt(req.params.id);
-
-    await db.read();
-
-    const cardIndex = db.data.cards.findIndex(c => c.id === cardId);
-    if (cardIndex === -1) {
+    const cardId = Number.parseInt(req.params.id, 10);
+    const removed = deleteCardRecord(cardId);
+    if (!removed) {
       return res.status(404).json({ error: '卡片不存在' });
     }
-
-    db.data.cards.splice(cardIndex, 1);
-    await db.write();
-
     res.json({ message: '卡片已删除' });
   } catch (error) {
     res.status(500).json({ error: '删除卡片失败' });

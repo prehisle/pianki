@@ -6,11 +6,15 @@ build/
 .DS_Store
 uploads/
 *.db
+*.db-shm
+*.db-wal
+*.db-journal
 *.sqlite
 .vscode/
 .idea/
 db.json
 backend/data/db.json
+backend/data/db.json.bak-*
 
 # Tauri 相关
 src-tauri/target/
