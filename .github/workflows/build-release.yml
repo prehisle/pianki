@@ -26,7 +26,7 @@ jobs:
           #   pkg_target: 'node18-linux-x64'
           - platform: 'windows-latest'
             target: 'x86_64-pc-windows-msvc'
-            pkg_target: 'node18-win-x64'
+            pkg_target: 'node20-win-x64'
 
     runs-on: ${{ matrix.platform }}
 
@@ -37,7 +37,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install Rust
