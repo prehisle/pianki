@@ -14,16 +14,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # 暂时只构建 Windows 版本
-          # - platform: 'macos-latest'
-          #   target: 'aarch64-apple-darwin'
-          #   pkg_target: 'node18-macos-arm64'
-          # - platform: 'macos-latest'
-          #   target: 'x86_64-apple-darwin'
-          #   pkg_target: 'node18-macos-x64'
+          - platform: 'macos-latest'
+            target: 'aarch64-apple-darwin'
+            pkg_target: 'node20-macos-arm64'
+          - platform: 'macos-latest'
+            target: 'x86_64-apple-darwin'
+            pkg_target: 'node20-macos-x64'
+          - platform: 'ubuntu-22.04'
+            target: 'x86_64-unknown-linux-gnu'
+            pkg_target: 'node20-linux-x64'
+          # Linux ARM64 需要交叉编译，暂时禁用，等其他平台稳定后再启用
           # - platform: 'ubuntu-22.04'
-          #   target: 'x86_64-unknown-linux-gnu'
-          #   pkg_target: 'node18-linux-x64'
+          #   target: 'aarch64-unknown-linux-gnu'
+          #   pkg_target: 'node20-linux-arm64'
           - platform: 'windows-latest'
             target: 'x86_64-pc-windows-msvc'
             pkg_target: 'node20-win-x64'
