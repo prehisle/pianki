@@ -4,7 +4,7 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use tauri::Manager;
+use tauri::{Manager, RunEvent};
 use tauri_plugin_shell::{
     process::{CommandChild, CommandEvent},
     ShellExt,
@@ -104,8 +104,15 @@ pub fn run() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            if let RunEvent::Exit = event {
+                log::info!("接收到退出事件，准备终止后端 sidecar");
+                let state = app_handle.state::<BackendState>();
+                state.kill_child();
+            }
+        });
 }
 
 #[derive(Default)]
@@ -120,20 +127,28 @@ impl BackendState {
     }
 
     fn clear(&self) {
+        self.take_child();
+    }
+
+    fn kill_child(&self) {
+        if let Some(child) = self.take_child() {
+            if let Err(err) = child.kill() {
+                log::warn!("终止后端 sidecar 进程失败: {}", err);
+            } else {
+                log::info!("后端 sidecar 进程已终止");
+            }
+        }
+    }
+
+    fn take_child(&self) -> Option<CommandChild> {
         let mut guard = self.child.lock().expect("backend child mutex poisoned");
-        guard.take();
+        guard.take()
     }
 }
 
 impl Drop for BackendState {
     fn drop(&mut self) {
-        if let Ok(child_slot) = self.child.get_mut() {
-            if let Some(child) = child_slot.take() {
-                if let Err(err) = child.kill() {
-                    log::warn!("应用退出时关闭后端进程失败: {}", err);
-                }
-            }
-        }
+        self.kill_child();
     }
 }
 
