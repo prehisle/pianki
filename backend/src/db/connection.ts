@@ -2,6 +2,7 @@ import BetterSqlite3, { Database as BetterSqliteDatabase } from 'better-sqlite3'
 import fs from 'fs/promises';
 import { INITIAL_SCHEMA, DEFAULT_META_ENTRIES, SCHEMA_VERSION } from './schema';
 import { sqlitePath, ensureDirectories } from './paths';
+import { resolveBetterSqliteNativeBinding } from './native-binding';
 
 let dbInstance: BetterSqliteDatabase | null = null;
 
@@ -11,7 +12,10 @@ export function getDb(): BetterSqliteDatabase {
   }
 
   ensureDirectories();
-  dbInstance = new BetterSqlite3(sqlitePath);
+  const nativeBinding = resolveBetterSqliteNativeBinding();
+  dbInstance = nativeBinding
+    ? new BetterSqlite3(sqlitePath, { nativeBinding })
+    : new BetterSqlite3(sqlitePath);
   dbInstance.pragma('journal_mode = WAL');
   dbInstance.pragma('foreign_keys = ON');
   return dbInstance;

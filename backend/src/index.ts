@@ -17,8 +17,23 @@ ensureDataDirectories();
 const logFile = path.join(baseDataDir, 'pianki-backend.log');
 
 // 日志函数
+function formatLocalTimestamp(date: Date): string {
+  const pad = (value: number): string => value.toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hour = pad(date.getHours());
+  const minute = pad(date.getMinutes());
+  const second = pad(date.getSeconds());
+  const offsetMinutes = -date.getTimezoneOffset();
+  const offsetSign = offsetMinutes >= 0 ? '+' : '-';
+  const offsetHours = pad(Math.floor(Math.abs(offsetMinutes) / 60));
+  const offsetMins = pad(Math.abs(offsetMinutes) % 60);
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}${offsetSign}${offsetHours}:${offsetMins}`;
+}
+
 function log(message: string) {
-  const timestamp = new Date().toISOString();
+  const timestamp = formatLocalTimestamp(new Date());
   const logMessage = `[${timestamp}] ${message}\n`;
   console.log(logMessage.trim());
 
