@@ -7,6 +7,7 @@ import betterSqlite3Package from 'better-sqlite3/package.json';
 const isPackaged = Boolean((process as any).pkg);
 let cachedNativeBindingPath: string | null = null;
 const moduleVersion = process.versions.modules ?? 'unknown';
+// In packaged mode, native assets are in the snapshot at /snapshot/pianki/backend/native
 const nativeAssetsDir = path.resolve(__dirname, '..', '..', 'native');
 
 export function resolveBetterSqliteNativeBinding(): string | undefined {
@@ -64,10 +65,27 @@ function readBundledBinding(): Buffer {
 function tryReadFromPrebuiltAssets(): Buffer | null {
   const exactName = buildPrebuiltFileName(process.platform, process.arch);
   const prebuiltFile = path.join(nativeAssetsDir, exactName);
+
+  if (isPackaged) {
+    console.log(`[native-binding] Looking for native binding at: ${prebuiltFile}`);
+    console.log(`[native-binding] nativeAssetsDir exists: ${fs.existsSync(nativeAssetsDir)}`);
+    if (fs.existsSync(nativeAssetsDir)) {
+      try {
+        const files = fs.readdirSync(nativeAssetsDir);
+        console.log(`[native-binding] Files in nativeAssetsDir: ${files.join(', ')}`);
+      } catch (e) {
+        console.log(`[native-binding] Error reading nativeAssetsDir: ${e}`);
+      }
+    }
+  }
+
   try {
     const buffer = fs.readFileSync(prebuiltFile);
     return buffer.length > 0 ? buffer : null;
-  } catch {
+  } catch (error) {
+    if (isPackaged) {
+      console.log(`[native-binding] Failed to read ${prebuiltFile}: ${error}`);
+    }
     const fallback = findFirstPrebuiltWithPrefix(process.platform, process.arch);
     if (!fallback) {
       return null;

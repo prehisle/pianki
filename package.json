@@ -13,7 +13,7 @@
     "dev:frontend": "npm run dev --workspace=frontend",
     "build": "npm run build --workspace=frontend && npm run build --workspace=backend",
     "start": "npm run start --workspace=backend",
-    "package:backend": "npm run build --workspace=backend && npm run prepare:native --workspace=backend && pkg backend/dist/index.js -t node20-macos-arm64,node20-macos-x64,node20-linux-x64,node20-linux-arm64,node20-win-x64 -o src-tauri/binaries/pianki-backend --compress Brotli --public-packages \"anki-apkg-export,marked,better-sqlite3,@mongodb-js/zstd\" --no-bytecode --public",
+    "package:backend": "npm run build --workspace=backend && npm run prepare:native --workspace=backend && pkg backend/dist/index.js -t node20-macos-arm64,node20-macos-x64,node20-linux-x64,node20-linux-arm64,node20-win-x64 -o src-tauri/binaries/pianki-backend --compress Brotli --public-packages \"anki-apkg-export,marked,better-sqlite3,@mongodb-js/zstd\" --no-bytecode --public --config backend/package.json",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"
