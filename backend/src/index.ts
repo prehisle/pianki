@@ -3,14 +3,17 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import { initDatabase, uploadsDir } from './database';
+import { baseDataDir, ensureDirectories as ensureDataDirectories } from './db/paths';
 import cardsRouter from './routes/cards';
 import decksRouter from './routes/decks';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// 确保数据目录存在
+ensureDataDirectories();
+
 // 设置日志文件
-const baseDataDir = process.env.PIANKI_DATA_DIR || path.join(__dirname, '..');
 const logFile = path.join(baseDataDir, 'pianki-backend.log');
 
 // 日志函数
@@ -22,6 +25,15 @@ function log(message: string) {
   try {
     fs.appendFileSync(logFile, logMessage);
   } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      try {
+        fs.mkdirSync(path.dirname(logFile), { recursive: true });
+        fs.appendFileSync(logFile, logMessage);
+        return;
+      } catch (err) {
+        console.error('无法创建日志目录:', err);
+      }
+    }
     console.error('无法写入日志文件:', error);
   }
 }
