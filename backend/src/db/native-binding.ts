@@ -7,6 +7,7 @@ import betterSqlite3Package from 'better-sqlite3/package.json';
 const isPackaged = Boolean((process as any).pkg);
 let cachedNativeBindingPath: string | null = null;
 const moduleVersion = process.versions.modules ?? 'unknown';
+const nativeAssetsDir = path.resolve(__dirname, '..', '..', 'native');
 
 export function resolveBetterSqliteNativeBinding(): string | undefined {
   if (!isPackaged) {
@@ -18,7 +19,7 @@ export function resolveBetterSqliteNativeBinding(): string | undefined {
   }
 
   // Extract the native addon to a real filesystem location so pkg can load it.
-  const { buffer } = readBundledBinding();
+  const buffer = readBundledBinding();
   const bindingHash = crypto.createHash('sha1').update(buffer).digest('hex');
   const bindingFileName = [
     'better-sqlite3',
@@ -43,7 +44,44 @@ export function resolveBetterSqliteNativeBinding(): string | undefined {
   return cachedNativeBindingPath;
 }
 
-function readBundledBinding(): { buffer: Buffer } {
+function readBundledBinding(): Buffer {
+  const prebuiltBuffer = tryReadFromPrebuiltAssets();
+  if (prebuiltBuffer) {
+    return prebuiltBuffer;
+  }
+
+  const fallbackBuffer = tryReadFromBundledPackage();
+  if (fallbackBuffer) {
+    return fallbackBuffer;
+  }
+
+  const expectedName = buildPrebuiltFileName(process.platform, process.arch);
+  throw new Error(
+    `Unable to locate the better-sqlite3 native binding inside the packaged bundle. Checked native asset ${expectedName} and bundled package files.`
+  );
+}
+
+function tryReadFromPrebuiltAssets(): Buffer | null {
+  const exactName = buildPrebuiltFileName(process.platform, process.arch);
+  const prebuiltFile = path.join(nativeAssetsDir, exactName);
+  try {
+    const buffer = fs.readFileSync(prebuiltFile);
+    return buffer.length > 0 ? buffer : null;
+  } catch {
+    const fallback = findFirstPrebuiltWithPrefix(process.platform, process.arch);
+    if (!fallback) {
+      return null;
+    }
+    try {
+      const buffer = fs.readFileSync(fallback);
+      return buffer.length > 0 ? buffer : null;
+    } catch {
+      return null;
+    }
+  }
+}
+
+function tryReadFromBundledPackage(): Buffer | null {
   const packageDir = path.dirname(require.resolve('better-sqlite3/package.json'));
   const candidatePaths = [
     path.join(packageDir, 'build', 'Release', 'better_sqlite3.node'),
@@ -55,12 +93,30 @@ function readBundledBinding(): { buffer: Buffer } {
     try {
       const buffer = fs.readFileSync(candidate);
       if (buffer.length > 0) {
-        return { buffer };
+        return buffer;
       }
     } catch {
       continue;
     }
   }
 
-  throw new Error('Unable to locate the better-sqlite3 native binding inside the packaged bundle.');
+  return null;
+}
+
+function buildPrebuiltFileName(platform: NodeJS.Platform, arch: string): string {
+  return `better-sqlite3-v${betterSqlite3Package.version}-${platform}-${arch}-node-v${moduleVersion}.node`;
+}
+
+function findFirstPrebuiltWithPrefix(platform: NodeJS.Platform, arch: string): string | null {
+  try {
+    const files = fs.readdirSync(nativeAssetsDir);
+    const prefix = `better-sqlite3-v${betterSqlite3Package.version}-${platform}-${arch}-node-v`;
+    const candidate = files.find((file) => file.startsWith(prefix) && file.endsWith('.node'));
+    if (candidate) {
+      return path.join(nativeAssetsDir, candidate);
+    }
+  } catch {
+    // ignore
+  }
+  return null;
 }
