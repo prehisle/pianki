@@ -18,10 +18,8 @@ export function resolveBetterSqliteNativeBinding(): string | undefined {
   }
 
   // Extract the native addon to a real filesystem location so pkg can load it.
-  const bindingSourcePath = findBundledBindingPath();
-  const bindingBuffer = fs.readFileSync(bindingSourcePath);
-
-  const bindingHash = crypto.createHash('sha1').update(bindingBuffer).digest('hex');
+  const { buffer } = readBundledBinding();
+  const bindingHash = crypto.createHash('sha1').update(buffer).digest('hex');
   const bindingFileName = [
     'better-sqlite3',
     betterSqlite3Package.version,
@@ -37,15 +35,15 @@ export function resolveBetterSqliteNativeBinding(): string | undefined {
   }
 
   const targetPath = path.join(nativeDir, `${bindingFileName}.node`);
-  if (!fs.existsSync(targetPath) || fs.statSync(targetPath).size !== bindingBuffer.length) {
-    fs.writeFileSync(targetPath, bindingBuffer);
+  if (!fs.existsSync(targetPath) || fs.statSync(targetPath).size !== buffer.length) {
+    fs.writeFileSync(targetPath, buffer);
   }
 
   cachedNativeBindingPath = targetPath;
   return cachedNativeBindingPath;
 }
 
-function findBundledBindingPath(): string {
+function readBundledBinding(): { buffer: Buffer } {
   const packageDir = path.dirname(require.resolve('better-sqlite3/package.json'));
   const candidatePaths = [
     path.join(packageDir, 'build', 'Release', 'better_sqlite3.node'),
@@ -55,8 +53,10 @@ function findBundledBindingPath(): string {
 
   for (const candidate of candidatePaths) {
     try {
-      fs.statSync(candidate);
-      return candidate;
+      const buffer = fs.readFileSync(candidate);
+      if (buffer.length > 0) {
+        return { buffer };
+      }
     } catch {
       continue;
     }
