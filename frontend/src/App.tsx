@@ -345,7 +345,7 @@ function App() {
     <AppShell
       header={{ height: 60 }}
       navbar={{ width: 280, breakpoint: 'sm' }}
-      padding="md"
+      padding={0}
     >
       <AppShell.Header>
         <Group h="100%" px="md">
@@ -367,7 +367,7 @@ function App() {
       </AppShell.Navbar>
 
       <AppShell.Main>
-        <Container size="xl">
+        <Container fluid px="sm" py="xs">
           {!currentDeckId ? (
             <Center h={400}>
               <Text c="dimmed" size="lg">请先创建或选择一个牌组</Text>

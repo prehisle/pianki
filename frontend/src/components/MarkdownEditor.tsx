@@ -1,5 +1,16 @@
-import { useRef } from 'react'
-import { Textarea, Button, Group, Paper, Text, Stack, Grid, FileButton } from '@mantine/core'
+import { useRef, useState, useLayoutEffect } from 'react'
+import {
+  Textarea,
+  Group,
+  Paper,
+  Text,
+  Stack,
+  Grid,
+  FileButton,
+  ActionIcon,
+  Tooltip,
+  Box
+} from '@mantine/core'
 import { IconPhoto, IconBold, IconItalic, IconCode, IconHelp } from '@tabler/icons-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -13,14 +24,30 @@ interface MarkdownEditorProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
+  label?: string
 }
 
-export default function MarkdownEditor({ value, onChange, placeholder }: MarkdownEditorProps) {
+export default function MarkdownEditor({ value, onChange, placeholder, label }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const previewContainerRef = useRef<HTMLDivElement>(null)
   const turndownService = useRef(new TurndownService({
     headingStyle: 'atx',
     codeBlockStyle: 'fenced'
   }))
+
+  const MIN_HEIGHT = 150
+  const DEFAULT_RATIO = 0.25
+
+  const getViewportHeight = () => (typeof window !== 'undefined' ? window.innerHeight : MIN_HEIGHT / DEFAULT_RATIO)
+
+  const computeInitialHeight = () => {
+    const viewportHeight = getViewportHeight()
+    return Math.round(Math.max(MIN_HEIGHT, viewportHeight * DEFAULT_RATIO))
+  }
+
+  const clampHeight = (rawHeight: number) => Math.max(rawHeight, MIN_HEIGHT)
+
+  const [syncedHeight, setSyncedHeight] = useState<number>(computeInitialHeight)
 
   const insertAtCursor = (text: string) => {
     const textarea = textareaRef.current
@@ -111,6 +138,48 @@ export default function MarkdownEditor({ value, onChange, placeholder }: Markdow
     return <img src={imageSrc} alt={alt || '图片'} style={{ maxWidth: '100%' }} />
   }
 
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const container = previewContainerRef.current
+    if (!container) return
+
+    const paddingCompensation = 12
+
+    const applyHeight = () => {
+      const viewportBase = computeInitialHeight()
+
+      const previousHeight = container.style.height
+      container.style.height = 'auto'
+      const contentHeight = container.scrollHeight
+      container.style.height = previousHeight
+
+      const rawHeight = contentHeight + paddingCompensation
+      const desiredHeight = clampHeight(Math.max(viewportBase, rawHeight))
+
+      setSyncedHeight((prev) => (Math.abs(prev - desiredHeight) > 1 ? desiredHeight : prev))
+    }
+
+    applyHeight()
+
+    const observerTarget = container.firstElementChild as HTMLElement | null
+    const observer = typeof ResizeObserver !== 'undefined' && observerTarget
+      ? new ResizeObserver(applyHeight)
+      : null
+    if (observer && observerTarget) {
+      observer.observe(observerTarget)
+    }
+
+    window.addEventListener('resize', applyHeight)
+
+    return () => {
+      window.removeEventListener('resize', applyHeight)
+      if (observer) {
+        observer.disconnect()
+      }
+    }
+  }, [value])
+
   const showHelp = () => {
     modals.open({
       title: 'Markdown 语法帮助',
@@ -135,79 +204,127 @@ export default function MarkdownEditor({ value, onChange, placeholder }: Markdow
   }
 
   return (
-    <Stack gap="md">
-      <Group gap="xs">
-        <FileButton onChange={handleImageUpload} accept="image/*">
-          {(props) => (
-            <Button {...props} leftSection={<IconPhoto size={16} />} variant="light" size="xs">
-              插入图片
-            </Button>
-          )}
-        </FileButton>
-        <Button
-          leftSection={<IconBold size={16} />}
-          variant="subtle"
-          size="xs"
-          onClick={() => insertAtCursor('**粗体文字**')}
-        >
-          粗体
-        </Button>
-        <Button
-          leftSection={<IconItalic size={16} />}
-          variant="subtle"
-          size="xs"
-          onClick={() => insertAtCursor('*斜体文字*')}
-        >
-          斜体
-        </Button>
-        <Button
-          leftSection={<IconCode size={16} />}
-          variant="subtle"
-          size="xs"
-          onClick={() => insertAtCursor('`代码`')}
-        >
-          代码
-        </Button>
-        <Button
-          leftSection={<IconHelp size={16} />}
-          variant="subtle"
-          size="xs"
-          onClick={showHelp}
-        >
-          帮助
-        </Button>
-      </Group>
+    <Stack gap="xs">
+      {label && (
+        <Text size="sm" fw={600}>
+          {label}
+        </Text>
+      )}
 
-      <Grid gutter="md">
-        <Grid.Col span={6}>
-          <Stack gap="xs" h="100%">
-            <Text size="sm" fw={500}>编辑</Text>
-            <Textarea
-              ref={textareaRef}
-              value={value}
-              onChange={(e) => onChange(e.currentTarget.value)}
-              onPaste={handlePaste}
-              placeholder={placeholder || '支持Markdown格式... 可直接粘贴图片'}
-              rows={20}
-              styles={{
-                input: {
-                  height: '500px',
-                  minHeight: '500px',
-                }
+      <Grid gutter={{ base: 'sm', md: 'md' }} align="stretch">
+        <Grid.Col span={{ base: 12, md: 6 }}>
+          <Stack gap={4} h="100%">
+            <Box
+              className="markdown-editor-area"
+              style={{
+                position: 'relative',
+                border: '1px solid var(--mantine-color-gray-3)',
+                borderRadius: '8px',
+                backgroundColor: 'white'
               }}
-            />
+            >
+              <Group
+                gap={4}
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  left: 8,
+                  zIndex: 2,
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  padding: '4px 6px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--mantine-color-gray-2)'
+                }}
+              >
+              <FileButton onChange={handleImageUpload} accept="image/*">
+                {(props) => (
+                  <Tooltip label="插入图片" withArrow>
+                    <ActionIcon
+                      {...props}
+                      variant="subtle"
+                      size="sm"
+                      aria-label="插入图片"
+                    >
+                      <IconPhoto size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+              </FileButton>
+
+              <Tooltip label="粗体" withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  size="sm"
+                  aria-label="插入粗体"
+                  onClick={() => insertAtCursor('**粗体文字**')}
+                >
+                  <IconBold size={16} />
+                </ActionIcon>
+              </Tooltip>
+
+              <Tooltip label="斜体" withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  size="sm"
+                  aria-label="插入斜体"
+                  onClick={() => insertAtCursor('*斜体文字*')}
+                >
+                  <IconItalic size={16} />
+                </ActionIcon>
+              </Tooltip>
+
+              <Tooltip label="代码" withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  size="sm"
+                  aria-label="插入代码"
+                  onClick={() => insertAtCursor('`代码`')}
+                >
+                  <IconCode size={16} />
+                </ActionIcon>
+              </Tooltip>
+
+              <Tooltip label="帮助" withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  size="sm"
+                  aria-label="打开帮助"
+                  onClick={showHelp}
+                >
+                  <IconHelp size={16} />
+                </ActionIcon>
+              </Tooltip>
+              </Group>
+
+              <Textarea
+                ref={textareaRef}
+                value={value}
+                onChange={(e) => onChange(e.currentTarget.value)}
+                onPaste={handlePaste}
+                placeholder={placeholder || '支持Markdown格式... 可直接粘贴图片'}
+                variant="unstyled"
+                styles={{
+                  input: {
+                    padding: '2.4rem 0.75rem 0.75rem',
+                    height: `${syncedHeight}px`,
+                    minHeight: `${MIN_HEIGHT}px`
+                  }
+                }}
+              />
+            </Box>
           </Stack>
         </Grid.Col>
-        <Grid.Col span={6}>
-          <Stack gap="xs" h="100%">
-            <Text size="sm" fw={500}>预览</Text>
+        <Grid.Col span={{ base: 12, md: 6 }}>
+          <Stack gap={4} h="100%">
             <Paper
+              ref={previewContainerRef}
               withBorder
               p="md"
+              radius="md"
               style={{
                 overflow: 'auto',
-                height: '500px',
-                minHeight: '500px',
+                height: `${syncedHeight}px`,
+                minHeight: `${MIN_HEIGHT}px`
               }}
             >
               {value ? (

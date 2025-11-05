@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Stack, Title, Button, Group, Alert } from '@mantine/core'
-import { IconInfoCircle, IconDeviceFloppy, IconX } from '@tabler/icons-react'
+import { Stack, Title, Button, Group, ScrollArea } from '@mantine/core'
+import { IconDeviceFloppy, IconX } from '@tabler/icons-react'
 import { Card } from '../api'
 import MarkdownEditor from './MarkdownEditor'
 
@@ -23,8 +23,14 @@ export default function CardEditor({ card, onSave, onCancel }: CardEditorProps) 
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Stack gap="lg">
+    <form
+      onSubmit={handleSubmit}
+      style={{
+        height: 'calc(100vh - 125px)',
+        minHeight: '480px'
+      }}
+    >
+      <Stack gap="sm" h="100%" style={{ overflow: 'hidden' }}>
         <Group
           justify="space-between"
           style={{
@@ -32,12 +38,12 @@ export default function CardEditor({ card, onSave, onCancel }: CardEditorProps) 
             top: 0,
             backgroundColor: 'white',
             zIndex: 100,
-            padding: '1rem 0',
-            marginBottom: '0.5rem',
-            borderBottom: '1px solid #e9ecef'
+            padding: '0.5rem 0 0.25rem',
+            marginBottom: '0.125rem',
+            borderBottom: '1px solid #f1f3f5'
           }}
         >
-          <Title order={2}>{card ? '编辑卡片' : '新建卡片'}</Title>
+          <Title order={3} style={{ margin: 0 }}>{card ? '编辑卡片' : '新建卡片'}</Title>
           <Group>
             <Button variant="default" leftSection={<IconX size={16} />} onClick={onCancel}>
               取消
@@ -48,27 +54,23 @@ export default function CardEditor({ card, onSave, onCancel }: CardEditorProps) 
           </Group>
         </Group>
 
-        <Alert variant="light" color="blue" icon={<IconInfoCircle />}>
-          在编辑器中可以直接粘贴图片或点击"插入图片"按钮
-        </Alert>
+        <ScrollArea style={{ flex: 1, minHeight: 0 }} offsetScrollbars type="auto">
+          <Stack gap="sm" pb="sm">
+            <MarkdownEditor
+              label="正面"
+              value={frontText}
+              onChange={setFrontText}
+              placeholder="输入卡片正面内容... 支持Markdown格式和图片"
+            />
 
-        <Stack gap="md">
-          <Title order={4}>正面</Title>
-          <MarkdownEditor
-            value={frontText}
-            onChange={setFrontText}
-            placeholder="输入卡片正面内容... 支持Markdown格式和图片"
-          />
-        </Stack>
-
-        <Stack gap="md">
-          <Title order={4}>背面</Title>
-          <MarkdownEditor
-            value={backText}
-            onChange={setBackText}
-            placeholder="输入卡片背面内容... 支持Markdown格式和图片"
-          />
-        </Stack>
+            <MarkdownEditor
+              label="背面"
+              value={backText}
+              onChange={setBackText}
+              placeholder="输入卡片背面内容... 支持Markdown格式和图片"
+            />
+          </Stack>
+        </ScrollArea>
       </Stack>
     </form>
   )

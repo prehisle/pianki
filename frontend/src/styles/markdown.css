@@ -170,3 +170,12 @@
 .markdown-content > *:last-child {
   margin-bottom: 0 !important;
 }
+
+.markdown-editor-area {
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.markdown-editor-area:focus-within {
+  border-color: var(--mantine-color-blue-5);
+  box-shadow: 0 0 0 1px var(--mantine-color-blue-2);
+}
