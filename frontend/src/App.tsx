@@ -3,7 +3,7 @@ import { AppShell, Title, Container, Button, Group, Text, Loader, Center, TextIn
 import { IconPlus, IconMail, IconBrandGithub, IconUsersGroup } from '@tabler/icons-react'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
-import { fetchDecks, fetchCards, createCard, updateCard, deleteCard, exportDeck, importDeck, createDeck, updateDeck, deleteDeck, Deck, Card } from './api'
+import { fetchDecks, fetchCards, createCard, updateCard, deleteCard, exportDeck, importDeck, createDeck, updateDeck, deleteDeck, Deck, Card, setBackendPort } from './api'
 // 打开外部链接（Tauri 或 浏览器）
 let openExternal: (url: string) => void = (url: string) => {
   try {
@@ -42,6 +42,8 @@ function App() {
     targetDeckId: null
   })
   const [sortBy, setSortBy] = useState<'custom' | 'created' | 'updated'>('custom')
+  const [showId, setShowId] = useState(false)
+  const [query, setQuery] = useState('')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const appVersion = '0.1.7'
 
@@ -58,6 +60,16 @@ function App() {
     })
     return sorted
   }, [cards, sortBy, sortOrder])
+
+  const displayCards = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return sortedCards
+    return sortedCards.filter(c => {
+      const f = (c.front_text || '').toLowerCase()
+      const b = (c.back_text || '').toLowerCase()
+      return f.includes(q) || b.includes(q) || String(c.id).includes(q)
+    })
+  }, [sortedCards, query])
 
   // 加载牌组列表
   useEffect(() => {
@@ -79,6 +91,10 @@ function App() {
       const unsubs: Array<() => void> = []
       g.event.listen('open-feedback', () => openFeedback()).then((unsub: any) => unsubs.push(unsub)).catch(() => {})
       g.event.listen('open-about', () => openAbout()).then((unsub: any) => unsubs.push(unsub)).catch(() => {})
+      g.event.listen('backend-ready', (e: any) => {
+        const p = Number(e?.payload)
+        if (Number.isFinite(p)) setBackendPort(p)
+      }).then((unsub: any) => unsubs.push(unsub)).catch(() => {})
       return () => unsubs.forEach(fn => {
         try { fn() } catch {}
       })
@@ -296,23 +312,34 @@ function App() {
 
     try {
       const blob = await exportDeck(currentDeckId)
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
       const deckName = decks.find(d => d.id === currentDeckId)?.name || 'deck'
-      a.download = `${deckName}.apkg`
 
-      // 等待下载触发后再显示成功提示
-      setTimeout(() => {
-        notifications.show({
-          title: '成功',
-          message: '导出成功',
-          color: 'green',
+      const isTauri = typeof (window as any).__TAURI__ !== 'undefined'
+      if (isTauri) {
+        // 桌面端：弹保存对话框并写入文件
+        const [{ save }, { writeFile }] = await Promise.all([
+          import('@tauri-apps/plugin-dialog'),
+          import('@tauri-apps/plugin-fs')
+        ])
+        const suggested = `${deckName}.apkg`
+        const targetPath = await save({
+          defaultPath: suggested,
+          filters: [{ name: 'Anki Package', extensions: ['apkg'] }]
         })
-      }, 500)
-
-      a.click()
-      window.URL.revokeObjectURL(url)
+        if (!targetPath) return
+        const buffer = new Uint8Array(await blob.arrayBuffer())
+        await writeFile(targetPath, buffer)
+        notifications.show({ title: '成功', message: `已保存到：${targetPath}`, color: 'green' })
+      } else {
+        // 浏览器端：使用 a[href] 触发下载
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${deckName}.apkg`
+        a.click()
+        window.URL.revokeObjectURL(url)
+        setTimeout(() => notifications.show({ title: '成功', message: '导出成功', color: 'green' }), 300)
+      }
     } catch (error) {
       console.error('导出失败:', error)
       notifications.show({
@@ -514,6 +541,13 @@ function App() {
                       新建卡片
                     </Button>
                     <Group gap="xs">
+                      <TextInput
+                        placeholder="搜索 正面/反面/ID"
+                        value={query}
+                        onChange={(e) => setQuery(e.currentTarget.value)}
+                        size="xs"
+                        w={220}
+                      />
                       <Select
                         value={sortBy}
                         onChange={(value) => {
@@ -529,6 +563,13 @@ function App() {
                         size="xs"
                         w={110}
                       />
+                      <Select
+                        value={showId ? '1' : '0'}
+                        onChange={(v) => setShowId(v === '1')}
+                        data={[{ value: '0', label: '隐藏ID' }, { value: '1', label: '显示ID' }]}
+                        size="xs"
+                        w={100}
+                      />
                       <SegmentedControl
                         value={sortOrder}
                         onChange={(value) => setSortOrder(value as 'asc' | 'desc')}
@@ -539,7 +580,7 @@ function App() {
                         size="xs"
                       />
                       <Text c="dimmed" size="sm">
-                        共 {cards.length} 张
+                        共 {displayCards.length}/{cards.length} 张
                       </Text>
                     </Group>
                   </Group>
@@ -551,7 +592,7 @@ function App() {
                     </Center>
                   ) : (
                     <CardList
-                      cards={sortedCards}
+                      cards={displayCards}
                       onEdit={setEditingCard}
                       onDelete={handleDeleteCard}
                       onInsertBefore={(anchorId) => {
@@ -563,6 +604,7 @@ function App() {
                         setIsCreating(true)
                         ;(window as any).__PIANKI_INSERT__ = { anchorId, position: 'after' }
                       }}
+                      showId={showId}
                     />
                   )}
                 </>

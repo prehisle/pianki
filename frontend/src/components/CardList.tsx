@@ -1,5 +1,5 @@
 import { Card as MantineCard, Text, Button, Group, Stack, Grid, Badge, Tooltip, Box, Menu, ActionIcon } from '@mantine/core'
-import { IconEdit, IconTrash, IconClock, IconClockEdit, IconDots, IconArrowBarUp, IconArrowBarDown } from '@tabler/icons-react'
+import { IconEdit, IconTrash, IconClock, IconClockEdit, IconDots, IconArrowBarUp, IconArrowBarDown, IconCopy } from '@tabler/icons-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Card } from '../api'
@@ -11,6 +11,7 @@ interface CardListProps {
   onDelete: (id: number) => void
   onInsertBefore?: (anchorId: number) => void
   onInsertAfter?: (anchorId: number) => void
+  showId?: boolean
 }
 
 // 自定义图片渲染器，将相对路径转换为完整URL
@@ -48,7 +49,7 @@ const formatDate = (dateString: string) => {
   })
 }
 
-export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onInsertAfter }: CardListProps) {
+export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onInsertAfter, showId }: CardListProps) {
   if (cards.length === 0) {
     return (
       <Text c="dimmed" ta="center" mt="xl" size="lg">
@@ -62,7 +63,24 @@ export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onIn
       {cards.map((card, index) => (
         <MantineCard key={card.id} shadow="sm" padding="lg" radius="md" withBorder>
           <Group justify="space-between" mb="xs">
-            <Badge variant="filled" size="lg" color="gray">#{index + 1}</Badge>
+            <Group gap={8}>
+              <Badge variant="filled" size="lg" color="gray">#{index + 1}</Badge>
+              {showId && (
+                <Group gap={6}>
+                  <Text size="xs" c="dimmed">ID: {card.id}</Text>
+                  <Tooltip label="复制ID" withArrow>
+                    <ActionIcon
+                      variant="subtle"
+                      size="xs"
+                      aria-label="复制ID"
+                      onClick={() => navigator.clipboard?.writeText(String(card.id))}
+                    >
+                      <IconCopy size={14} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Group>
+              )}
+            </Group>
           </Group>
           <Grid>
             <Grid.Col span={6}>

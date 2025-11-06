@@ -5,12 +5,10 @@ use std::{
     time::{Duration, Instant},
 };
 use tauri::{Manager, RunEvent, WindowEvent, Emitter};
-use tauri::menu::{MenuBuilder, SubmenuBuilder, MenuItemBuilder, PredefinedMenuItem};
 use tauri_plugin_shell::{
     process::{CommandChild, CommandEvent},
     ShellExt,
 };
-use tauri_plugin_opener::OpenerExt;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -28,6 +26,7 @@ pub fn run() {
         })
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(BackendState::default())
         .setup(|app| {
@@ -67,7 +66,7 @@ pub fn run() {
                         "PIANKI_DATA_DIR",
                         app_data_dir.to_string_lossy().to_string(),
                     )
-                    .env("PORT", "3001");
+                    .env("PORT", "9908");
 
                 match sidecar_command.spawn() {
                     Ok((mut rx, child)) => {
@@ -80,19 +79,30 @@ pub fn run() {
                         }
 
                         // 后台记录 sidecar 输出
-                        let log_handle = app.handle().clone();
+                        let app_handle = app.handle().clone();
                         tauri::async_runtime::spawn(async move {
                             while let Some(event) = rx.recv().await {
                                 match event {
                                     CommandEvent::Stdout(line) => {
-                                        log::info!("[backend] {}", String::from_utf8_lossy(&line))
+                                        let text = String::from_utf8_lossy(&line);
+                                        log::info!("[backend] {}", text);
+                                        if let Some(idx) = text.find("http://localhost:") {
+                                            let tail = &text[idx + "http://localhost:".len()..];
+                                            let mut port_str = String::new();
+                                            for ch in tail.chars() {
+                                                if ch.is_ascii_digit() { port_str.push(ch); } else { break; }
+                                            }
+                                            if let Ok(port) = port_str.parse::<u16>() {
+                                                let _ = app_handle.emit("backend-ready", port);
+                                            }
+                                        }
                                     }
                                     CommandEvent::Stderr(line) => {
                                         log::error!("[backend] {}", String::from_utf8_lossy(&line))
                                     }
                                     CommandEvent::Terminated(status) => {
                                         log::info!("后端进程已退出: {:?}", status);
-                                        let state = log_handle.state::<BackendState>();
+                                        let state = app_handle.state::<BackendState>();
                                         state.clear();
                                         break;
                                     }
@@ -175,10 +185,13 @@ fn wait_for_backend_ready(timeout: Duration) {
     let start = Instant::now();
     let pause = Duration::from_millis(200);
 
+    let ports: Vec<u16> = (9908..=9928).chain(3001..=3001).collect();
     while start.elapsed() < timeout {
-        if TcpStream::connect(("127.0.0.1", 3001)).is_ok() {
-            log::info!("后端端口已打开，继续启动前端");
-            return;
+        for p in &ports {
+            if TcpStream::connect(("127.0.0.1", *p)).is_ok() {
+                log::info!("后端端口 {} 已打开，继续启动前端", p);
+                return;
+            }
         }
         thread::sleep(pause);
     }

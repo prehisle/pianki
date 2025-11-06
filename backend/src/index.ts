@@ -1,4 +1,5 @@
 import express from 'express';
+import http from 'http';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
@@ -9,7 +10,8 @@ import cardsRouter from './routes/cards';
 import decksRouter from './routes/decks';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const START_PORT = Number(process.env.PORT || 9908);
+const END_PORT = Number(process.env.PORT_RANGE_END || (START_PORT + 20));
 
 // 确保数据目录存在
 ensureDataDirectories();
@@ -57,7 +59,7 @@ function log(message: string) {
 log('=== Pianki 后端服务启动 ===');
 log(`数据目录: ${baseDataDir}`);
 log(`日志文件: ${logFile}`);
-log(`端口: ${PORT}`);
+log(`起始端口: ${START_PORT}`);
 
 // 中间件
 app.use(cors());
@@ -94,13 +96,42 @@ initDatabase()
       res.status(500).json({ error: '服务器内部错误', message: err.message });
     });
 
-    const server = app.listen(PORT, () => {
-      log(`🚀 服务器成功启动！`);
-      log(`🌐 HTTP 地址: http://localhost:${PORT}`);
-      log(`📡 API 地址: http://localhost:${PORT}/api`);
+    // 绑定到可用端口（从 START_PORT 开始，遇到占用则递增，直到 END_PORT）
+    const bindAvailablePort = (start: number, end: number): Promise<{ server: http.Server; port: number }> => {
+      return new Promise((resolve, reject) => {
+        let current = start;
+        const tryListen = () => {
+          const srv = app.listen(current);
+          const onError = (err: any) => {
+            if (err && err.code === 'EADDRINUSE' && current < end) {
+              log(`端口 ${current} 被占用，尝试下一个...`);
+              srv.off('error', onError);
+              srv.off('listening', onListening);
+              current += 1;
+              tryListen();
+            } else {
+              reject(err);
+            }
+          };
+          const onListening = () => {
+            srv.off('error', onError);
+            resolve({ server: srv, port: current });
+          };
+          srv.once('error', onError);
+          srv.once('listening', onListening);
+        };
+        tryListen();
+      });
+    };
+
+    const { server, port } = await bindAvailablePort(START_PORT, END_PORT);
+
+    log(`🚀 服务器成功启动！`);
+    log(`🌐 HTTP 地址: http://localhost:${port}`);
+      log(`📡 API 地址: http://localhost:${port}/api`);
       log(`📁 上传目录: ${uploadsDir}`);
       log('===========================');
-    });
+    
 
     // 优雅退出与父进程存活检测，避免安装器升级时文件被占用
     const shutdown = (reason: string) => {

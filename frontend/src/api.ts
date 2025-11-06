@@ -2,13 +2,23 @@ import axios from 'axios'
 
 const trimTrailingSlash = (url: string) => url.replace(/\/+$/, '')
 
-const API_BASE_URL = trimTrailingSlash(
+let API_BASE_URL = trimTrailingSlash(
   import.meta.env.VITE_API_BASE_URL
     ? String(import.meta.env.VITE_API_BASE_URL)
     : import.meta.env.DEV
       ? '/api'
-      : 'http://localhost:3001/api'
+      : 'http://127.0.0.1:9908/api'
 )
+
+export function getApiBaseUrl() {
+  return API_BASE_URL
+}
+
+export function setBackendPort(port: number) {
+  if (!import.meta.env.DEV) {
+    API_BASE_URL = trimTrailingSlash(`http://127.0.0.1:${port}/api`)
+  }
+}
 
 export interface Deck {
   id: number

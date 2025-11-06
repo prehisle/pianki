@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Alert, Loader, Stack, Text, Code, Button } from '@mantine/core'
+import { getApiBaseUrl } from '../api'
 import { IconAlertCircle, IconRefresh } from '@tabler/icons-react'
 
 interface ConnectionStatusProps {
@@ -14,7 +15,8 @@ export default function ConnectionStatus({ onConnected }: ConnectionStatusProps)
 
   const checkConnection = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/health', {
+      const base = getApiBaseUrl()
+      const response = await fetch(`${base}/health`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       })
