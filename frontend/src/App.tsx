@@ -414,6 +414,19 @@ function App() {
     return <ConnectionStatus onConnected={() => setBackendConnected(true)} />
   }
 
+  // 响应 Tauri 顶栏菜单事件（open-feedback / open-about）
+  useEffect(() => {
+    const g: any = (window as any).__TAURI__
+    if (g?.event?.listen) {
+      const unsubs: Array<() => void> = []
+      g.event.listen('open-feedback', () => openFeedback()).then((unsub: any) => unsubs.push(unsub)).catch(() => {})
+      g.event.listen('open-about', () => openAbout()).then((unsub: any) => unsubs.push(unsub)).catch(() => {})
+      return () => unsubs.forEach(fn => {
+        try { fn() } catch {}
+      })
+    }
+  }, [])
+
   return (
     <AppShell
       header={{ height: 60 }}

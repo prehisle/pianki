@@ -5,6 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tauri::{Manager, RunEvent};
+use tauri::menu::{MenuBuilder, SubmenuBuilder, MenuItemBuilder, PredefinedMenuItem, AboutMetadata};
 use tauri_plugin_shell::{
     process::{CommandChild, CommandEvent},
     ShellExt,
@@ -13,6 +14,45 @@ use tauri_plugin_shell::{
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // 顶栏菜单：Help -> Feedback / About
+        .menu(|app| {
+            let help = SubmenuBuilder::new(app)
+                .text("Help")
+                .items(&[
+                    &MenuItemBuilder::new("Feedback & Support").id("help-feedback").build(app)?,
+                    &MenuItemBuilder::new("Report a bug (GitHub)").id("help-bug").build(app)?,
+                    &MenuItemBuilder::new("Open Discussions").id("help-discuss").build(app)?,
+                    &PredefinedMenuItem::about(app, Some(AboutMetadata::new()))?,
+                ])
+                .build()?;
+
+            MenuBuilder::new(app)
+                .items(&[&help])
+                .build()
+        })
+        .on_menu_event(|app, event| {
+            let id = event.id().as_ref();
+            match id {
+                "help-feedback" => {
+                    // 让前端打开内置反馈弹窗
+                    let _ = app.emit_all("open-feedback", ());
+                }
+                "help-bug" => {
+                    // 打开 GitHub Issues
+                    let _ = app.shell().open(
+                        "https://github.com/prehisle/pianki/issues/new/choose",
+                        None,
+                    );
+                }
+                "help-discuss" => {
+                    let _ = app.shell().open(
+                        "https://github.com/prehisle/pianki/discussions",
+                        None,
+                    );
+                }
+                _ => {}
+            }
+        })
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .manage(BackendState::default())
