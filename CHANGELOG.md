@@ -7,6 +7,22 @@
 
 ## [未发布]
 
+## [0.1.7] - 2025-11-06
+
+### 修复
+- 🐛 Windows 安装升级时后端进程占用导致无法继续：
+  - 后端 sidecar 监听信号与父进程存活，父进程退出后自动结束
+  - 关闭窗口/销毁时在 Tauri 侧兜底终止 sidecar
+- 🐛 Markdown 单行换行未显示：
+  - 前端预览启用 `remark-breaks`
+  - Anki 导出使用 `marked` 的 `breaks: true`
+
+### 新增
+- ✨ 顶栏 Help 菜单：Feedback、Report a bug、Discussions、About
+
+### 维护
+- 🔧 锁文件同步，移除子包多余 lock，保证 `npm ci` 稳定
+
 ## [0.1.5] - 2025-11-06
 
 ### 修复
