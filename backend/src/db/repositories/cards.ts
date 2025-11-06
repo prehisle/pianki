@@ -243,6 +243,23 @@ export function bulkInsertCards(deckId: number, cards: BulkCardInput[]): number 
   return cards.length;
 }
 
+export function ensureCardGuid(cardId: number): string {
+  const db = getDb();
+  const row = db.prepare('SELECT guid FROM cards WHERE id = ?').get(cardId) as { guid?: string } | undefined;
+  if (!row) {
+    throw new Error(`Card ${cardId} not found while ensuring guid`);
+  }
+
+  const existing = row.guid?.trim();
+  if (existing) {
+    return existing;
+  }
+
+  const guid = generateUniqueGuid(db);
+  db.prepare('UPDATE cards SET guid = ? WHERE id = ?').run(guid, cardId);
+  return guid;
+}
+
 function generateUniqueGuid(db: ReturnType<typeof getDb>): string {
   const check = db.prepare('SELECT 1 FROM cards WHERE guid = ? LIMIT 1');
   let guid: string;
