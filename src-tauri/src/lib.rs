@@ -4,13 +4,13 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use tauri::{Manager, RunEvent};
-use tauri::app::WindowEvent;
+use tauri::{Manager, RunEvent, WindowEvent, Emitter};
 use tauri::menu::{MenuBuilder, SubmenuBuilder, MenuItemBuilder, PredefinedMenuItem};
 use tauri_plugin_shell::{
     process::{CommandChild, CommandEvent},
     ShellExt,
 };
+use tauri_plugin_opener::OpenerExt;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -39,15 +39,15 @@ pub fn run() {
                 }
                 "help-bug" => {
                     // 打开 GitHub Issues
-                    let _ = app.shell().open(
+                    let _ = app.opener().open_url(
                         "https://github.com/prehisle/pianki/issues/new/choose",
-                        None,
+                        None::<String>,
                     );
                 }
                 "help-discuss" => {
-                    let _ = app.shell().open(
+                    let _ = app.opener().open_url(
                         "https://github.com/prehisle/pianki/discussions",
-                        None,
+                        None::<String>,
                     );
                 }
                 _ => {}
@@ -65,6 +65,7 @@ pub fn run() {
         })
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_opener::init())
         .manage(BackendState::default())
         .setup(|app| {
             // 总是启用日志插件（包括生产模式）
