@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm'
 import { Card } from '../api'
 import '../styles/markdown.css'
 import { Virtuoso } from 'react-virtuoso'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface CardListProps {
   cards: Card[]
@@ -57,6 +58,44 @@ export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onIn
       </Text>
     )
   }
+
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const [viewportHeight, setViewportHeight] = useState<number>(() => (typeof window !== 'undefined' ? window.innerHeight : 0))
+
+  const updateHeight = useCallback(() => {
+    if (!containerRef.current || typeof window === 'undefined') {
+      return
+    }
+    const rect = containerRef.current.getBoundingClientRect()
+    const padding = 16 // leave a small breathing room with surrounding padding
+    const newHeight = Math.max(window.innerHeight - rect.top - padding, 120)
+    setViewportHeight(prev => (Math.abs(prev - newHeight) > 1 ? newHeight : prev))
+  }, [])
+
+  useEffect(() => {
+    updateHeight()
+    window.addEventListener('resize', updateHeight)
+    return () => {
+      window.removeEventListener('resize', updateHeight)
+    }
+  }, [updateHeight])
+
+  useEffect(() => {
+    updateHeight()
+  }, [updateHeight, cards.length])
+
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') {
+      return
+    }
+    const parent = containerRef.current?.parentElement
+    if (!parent) {
+      return
+    }
+    const observer = new ResizeObserver(() => updateHeight())
+    observer.observe(parent)
+    return () => observer.disconnect()
+  }, [updateHeight])
 
   const renderCard = (index: number) => {
     const card = cards[index]
@@ -206,9 +245,9 @@ export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onIn
   }
 
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+    <div ref={containerRef} style={{ height: '100%', minHeight: 0 }}>
       <Virtuoso
-        style={{ flex: 1, height: '100%' }}
+        style={{ height: viewportHeight ? `${viewportHeight}px` : '100%' }}
         totalCount={cards.length}
         itemContent={(index) => renderCard(index)}
         computeItemKey={(index) => String(cards[index]?.id ?? index)}
