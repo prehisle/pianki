@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm'
 import { Card } from '../api'
 import '../styles/markdown.css'
 import { Virtuoso } from 'react-virtuoso'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface CardListProps {
   cards: Card[]
@@ -58,10 +59,54 @@ export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onIn
     )
   }
 
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const [viewportHeight, setViewportHeight] = useState<number>(() => (typeof window !== 'undefined' ? window.innerHeight : 0))
+
+  const updateHeight = useCallback(() => {
+    if (!containerRef.current || typeof window === 'undefined') {
+      return
+    }
+    const rect = containerRef.current.getBoundingClientRect()
+    const padding = 16 // leave a small breathing room with surrounding padding
+    const newHeight = Math.max(window.innerHeight - rect.top - padding, 120)
+    setViewportHeight(prev => (Math.abs(prev - newHeight) > 1 ? newHeight : prev))
+  }, [])
+
+  useEffect(() => {
+    updateHeight()
+    window.addEventListener('resize', updateHeight)
+    return () => {
+      window.removeEventListener('resize', updateHeight)
+    }
+  }, [updateHeight])
+
+  useEffect(() => {
+    updateHeight()
+  }, [updateHeight, cards.length])
+
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') {
+      return
+    }
+    const parent = containerRef.current?.parentElement
+    if (!parent) {
+      return
+    }
+    const observer = new ResizeObserver(() => updateHeight())
+    observer.observe(parent)
+    return () => observer.disconnect()
+  }, [updateHeight])
+
   const renderCard = (index: number) => {
     const card = cards[index]
+    if (!card) {
+      return null
+    }
+
+    const isLast = index === cards.length - 1
     return (
-      <MantineCard key={card.id} shadow="sm" padding="lg" radius="md" withBorder style={{ marginBottom: 12 }}>
+      <Box key={card.id} pb={isLast ? 0 : 12}>
+        <MantineCard shadow="sm" padding="lg" radius="md" withBorder>
           <Group justify="space-between" mb="xs">
             <Group gap={8}>
               <Badge variant="filled" size="lg" color="gray">#{index + 1}</Badge>
@@ -195,15 +240,18 @@ export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onIn
             </Group>
           </Group>
         </MantineCard>
+      </Box>
     )
   }
 
   return (
-    <div style={{ height: 'calc(100vh - 180px)' }}>
+    <div ref={containerRef} style={{ height: '100%', minHeight: 0 }}>
       <Virtuoso
+        style={{ height: viewportHeight ? `${viewportHeight}px` : '100%' }}
         totalCount={cards.length}
         itemContent={(index) => renderCard(index)}
-        overscan={200}
+        computeItemKey={(index) => String(cards[index]?.id ?? index)}
+        overscan={6}
       />
     </div>
   )

@@ -44,7 +44,7 @@ function App() {
   const [sortBy, setSortBy] = useState<'custom' | 'created' | 'updated'>('custom')
   const [query, setQuery] = useState('')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  const appVersion = '0.1.8'
+  const appVersion = '0.1.9'
 
   // 根据排序选项对卡片进行排序
   const displayCards = useMemo(() => {
@@ -489,7 +489,12 @@ function App() {
       </AppShell.Navbar>
 
       <AppShell.Main>
-        <Container fluid px="sm" py="xs">
+        <Container
+          fluid
+          px="sm"
+          py="xs"
+          style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}
+        >
           {!currentDeckId ? (
             <Center h={400}>
               <Text c="dimmed" size="lg">请先创建或选择一个牌组</Text>
@@ -507,7 +512,7 @@ function App() {
                   }}
                 />
               ) : (
-                <>
+                <Stack gap="xs" style={{ flex: 1, minHeight: 0 }}>
                   <Box
                     style={{
                       position: 'sticky',
@@ -561,27 +566,29 @@ function App() {
                   </Group>
                   </Box>
 
-                  {loading ? (
-                    <Center h={200}>
-                      <Loader />
-                    </Center>
-                  ) : (
-                    <CardList
-                      cards={displayCards}
-                      onEdit={setEditingCard}
-                      onDelete={handleDeleteCard}
-                      onInsertBefore={(anchorId) => {
-                        setIsCreating(true)
-                        // 临时保存到全局 window 以简化最小实现
-                        ;(window as any).__PIANKI_INSERT__ = { anchorId, position: 'before' }
-                      }}
-                      onInsertAfter={(anchorId) => {
-                        setIsCreating(true)
-                        ;(window as any).__PIANKI_INSERT__ = { anchorId, position: 'after' }
-                      }}
-                    />
-                  )}
-                </>
+                  <Box style={{ flex: 1, minHeight: 0 }}>
+                    {loading ? (
+                      <Center h="100%">
+                        <Loader />
+                      </Center>
+                    ) : (
+                      <CardList
+                        cards={displayCards}
+                        onEdit={setEditingCard}
+                        onDelete={handleDeleteCard}
+                        onInsertBefore={(anchorId) => {
+                          setIsCreating(true)
+                          // 临时保存到全局 window 以简化最小实现
+                          ;(window as any).__PIANKI_INSERT__ = { anchorId, position: 'before' }
+                        }}
+                        onInsertAfter={(anchorId) => {
+                          setIsCreating(true)
+                          ;(window as any).__PIANKI_INSERT__ = { anchorId, position: 'after' }
+                        }}
+                      />
+                    )}
+                  </Box>
+                </Stack>
               )}
             </>
           )}
