@@ -300,7 +300,8 @@ function App() {
       const blob = await exportDeck(currentDeckId)
       const deckName = decks.find(d => d.id === currentDeckId)?.name || 'deck'
 
-      const isTauri = typeof (window as any).__TAURI__ !== 'undefined'
+      const tauriGlobals = window as any
+      const isTauri = Boolean(tauriGlobals?.__TAURI__ || tauriGlobals?.__TAURI_IPC__)
       if (isTauri) {
         // 桌面端：弹保存对话框并写入文件
         const [{ save }, { writeFile }] = await Promise.all([

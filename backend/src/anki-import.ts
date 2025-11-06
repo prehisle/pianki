@@ -312,7 +312,8 @@ export async function importFromAnki(apkgBuffer: Buffer, uploadsDir: string): Pr
         }
       }
 
-      const textWithBreaks = field.replace(/<br\s*\/?>/gi, '\n');
+      const withoutStyles = field.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+      const textWithBreaks = withoutStyles.replace(/<br\s*\/?>/gi, '\n');
       const text = textWithBreaks
         .replace(/<[^>]+>/g, '')
         .replace(/&nbsp;/gi, ' ')
@@ -336,16 +337,58 @@ export async function importFromAnki(apkgBuffer: Buffer, uploadsDir: string): Pr
       return result;
     };
 
-    const fieldRows = db
-      .prepare('SELECT ntid as noteTypeId, ord, name FROM fields ORDER BY ntid, ord')
-      .all() as Array<{ noteTypeId: number; ord: number; name: string }>;
-    const fieldNameMap = new Map<number, string[]>();
-    for (const row of fieldRows) {
-      if (!fieldNameMap.has(row.noteTypeId)) {
-        fieldNameMap.set(row.noteTypeId, []);
+    const resolveFieldNames = () => {
+      const fieldNameMap = new Map<number, string[]>();
+      const hasFieldsTable = db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'fields'")
+        .get() as { name: string } | undefined;
+
+      if (hasFieldsTable) {
+        const fieldRows = db
+          .prepare('SELECT ntid as noteTypeId, ord, name FROM fields ORDER BY ntid, ord')
+          .all() as Array<{ noteTypeId: number; ord: number; name: string }>;
+
+        for (const row of fieldRows) {
+          if (!fieldNameMap.has(row.noteTypeId)) {
+            fieldNameMap.set(row.noteTypeId, []);
+          }
+          fieldNameMap.get(row.noteTypeId)![row.ord] = row.name?.trim() ?? '';
+        }
+        return fieldNameMap;
       }
-      fieldNameMap.get(row.noteTypeId)![row.ord] = row.name;
-    }
+
+      const colRow = db
+        .prepare('SELECT models FROM col LIMIT 1')
+        .get() as { models?: string } | undefined;
+
+      if (!colRow?.models) {
+        return fieldNameMap;
+      }
+
+      try {
+        const models = JSON.parse(colRow.models) as Record<
+          string,
+          { id?: number; name?: string; flds?: Array<{ name?: string }> }
+        >;
+        Object.values(models).forEach(model => {
+          const modelId = Number(model?.id);
+          if (!Number.isFinite(modelId)) {
+            return;
+          }
+          const names =
+            Array.isArray(model?.flds) && model.flds.length > 0
+              ? model.flds.map(f => (f?.name ?? '').trim())
+              : [];
+          fieldNameMap.set(modelId, names);
+        });
+      } catch (err) {
+        console.warn('解析 Anki 模板字段名称失败，将使用默认字段顺序:', err);
+      }
+
+      return fieldNameMap;
+    };
+
+    const fieldNameMap = resolveFieldNames();
 
     const notes = db
       .prepare('SELECT id, flds, mid FROM notes')
@@ -380,22 +423,37 @@ export async function importFromAnki(apkgBuffer: Buffer, uploadsDir: string): Pr
       };
 
       processedFields.forEach((processed, index) => {
-        const label = fieldNames[index];
+        const labelRaw = (fieldNames[index] ?? '').trim();
+        const label = labelRaw || undefined;
+        const labelNormalized = labelRaw.toLowerCase();
+        const isBackLabel = /back|answer|反面|答案/.test(labelNormalized);
+        const isFrontLabel = /front|question|正面|题面/.test(labelNormalized);
         const text = processed.text;
         if (text) {
           const normalizedText = text.trim();
           if (normalizedText) {
-            if (frontTextParts.length === 0) {
-              pushText('front', normalizedText, label);
-            } else if (
-              frontTextParts.length === 1 &&
-              normalizedText.length <= 80 &&
-              index <= 3
-            ) {
-              pushText('front', normalizedText, label);
+            let target: 'front' | 'back';
+
+            if (isBackLabel) {
+              target = 'back';
+            } else if (isFrontLabel) {
+              target = 'front';
+            } else if (index === 0) {
+              target = 'front';
+            } else if (index === 1) {
+              target = 'back';
             } else {
-              pushText('back', normalizedText, label);
+              target = frontTextParts.length === 0 ? 'front' : 'back';
             }
+
+            if (
+              target === 'front' &&
+              (frontTextParts.length > 0 && (isBackLabel || normalizedText.length > 120 || index > 0))
+            ) {
+              target = 'back';
+            }
+
+            pushText(target, normalizedText, label);
           }
         }
 
