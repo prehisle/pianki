@@ -20,7 +20,7 @@ const imageRenderer = ({ src, alt }: { src?: string; alt?: string }) => {
 
   // 如果是相对路径（以/uploads/开头），添加服务器地址
   const imageSrc = src.startsWith('/uploads/')
-    ? `http://localhost:3001${src}`
+    ? `http://localhost:9908${src}`
     : src
 
   return <img src={imageSrc} alt={alt || '图片'} style={{ maxWidth: '100%' }} />
@@ -88,7 +88,7 @@ export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onIn
                   <Box style={{ fontSize: '0.875rem' }}>
                     {card.front_image && (
                       <img
-                        src={`http://localhost:3001${card.front_image}`}
+                        src={`http://localhost:9908${card.front_image}`}
                         alt="正面图片"
                         style={{ maxWidth: '100%', marginBottom: '0.5rem' }}
                       />
@@ -115,7 +115,7 @@ export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onIn
                   <Box style={{ fontSize: '0.875rem' }}>
                     {card.back_image && (
                       <img
-                        src={`http://localhost:3001${card.back_image}`}
+                        src={`http://localhost:9908${card.back_image}`}
                         alt="背面图片"
                         style={{ maxWidth: '100%', marginBottom: '0.5rem' }}
                       />

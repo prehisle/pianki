@@ -86,7 +86,7 @@ com.pianki.app/
 后端支持以下环境变量：
 
 - `PIANKI_DATA_DIR`: 数据目录路径（在 Tauri 应用中自动设置）
-- `PORT`: 后端服务器端口（默认 3001）
+- `PORT`: 后端服务器端口（默认 9908）
 
 ## 已解决的问题
 
@@ -106,14 +106,14 @@ com.pianki.app/
 **原因**:
 - Tauri 使用自定义协议（tauri:// 或 app://）加载前端资源
 - Vite proxy 配置在生产环境不生效
-- 相对路径请求无法到达 http://localhost:3001 的后端
+- 相对路径请求无法到达 http://localhost:9908 的后端
 
 **解决方案**:
 ```typescript
 // frontend/src/api.ts
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
-  (window.__TAURI_IPC__ ? 'http://localhost:3001/api' : '/api')
+  (window.__TAURI_IPC__ ? 'http://localhost:9908/api' : '/api')
 ```
 
 ### 3. 数据库初始化问题（已解决）

@@ -176,7 +176,7 @@ pianki/
 ## 🔧 配置说明
 
 ### 服务器端口
-- 开发环境（Web）：前端 http://localhost:3000，后端 http://localhost:3001
+- 开发环境（Web）：前端 http://localhost:3000，后端 http://localhost:9908
 - 桌面版（Tauri）：后端端口自动选择，默认从 `9908` 开始，若冲突会在 `9908–9928` 之间递增尝试；前端在启动时接收 `backend-ready` 事件自动切换到实际端口
 
 ### 数据存储位置

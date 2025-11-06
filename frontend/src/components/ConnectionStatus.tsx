@@ -107,7 +107,7 @@ export default function ConnectionStatus({ onConnected }: ConnectionStatusProps)
         >
           <Stack gap="xs">
             <Text size="sm">
-              Pianki 无法连接到本地后端服务器 (http://localhost:3001)
+              Pianki 无法连接到本地后端服务器 (http://localhost:9908)
             </Text>
 
             <Text size="sm" fw={700}>错误信息:</Text>

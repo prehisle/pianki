@@ -184,7 +184,7 @@ fn wait_for_backend_ready(timeout: Duration) {
     let start = Instant::now();
     let pause = Duration::from_millis(200);
 
-    let ports: Vec<u16> = (9908..=9928).chain(3001..=3001).collect();
+    let ports: Vec<u16> = (9908..=9928).collect();
     while start.elapsed() < timeout {
         for p in &ports {
             if TcpStream::connect(("127.0.0.1", *p)).is_ok() {

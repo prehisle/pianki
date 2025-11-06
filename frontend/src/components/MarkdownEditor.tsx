@@ -133,7 +133,7 @@ export default function MarkdownEditor({ value, onChange, placeholder, label }: 
 
     // 如果是相对路径（以/uploads/开头），添加服务器地址
     const imageSrc = src.startsWith('/uploads/')
-      ? `http://localhost:3001${src}`
+      ? `http://localhost:9908${src}`
       : src
 
     return <img src={imageSrc} alt={alt || '图片'} style={{ maxWidth: '100%' }} />

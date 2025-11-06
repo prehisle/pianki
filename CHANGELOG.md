@@ -58,7 +58,7 @@
   - 零额外依赖，完美兼容 pkg 打包工具
 
 - 🐛 **修复 Tauri 环境 API 请求问题**
-  - 检测 Tauri 环境，自动切换到绝对 URL (`http://localhost:3001/api`)
+  - 检测 Tauri 环境，自动切换到绝对 URL (`http://localhost:9908/api`)
   - 解决打包后前端无法连接后端的问题
   - 开发环境继续使用 Vite proxy
 
