@@ -32,7 +32,7 @@ function App() {
   })
   const [sortBy, setSortBy] = useState<'created' | 'updated'>('created')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  const appVersion = '0.1.5'
+  const appVersion = '0.1.7'
 
   // 根据排序选项对卡片进行排序
   const sortedCards = useMemo(() => {
@@ -56,6 +56,20 @@ function App() {
       loadCards()
     }
   }, [currentDeckId])
+
+  // 响应 Tauri 顶栏菜单事件（open-feedback / open-about）
+  // 注意：Hooks 必须在组件最外层调用，不能放在条件 return 之后
+  useEffect(() => {
+    const g: any = (window as any).__TAURI__
+    if (g?.event?.listen) {
+      const unsubs: Array<() => void> = []
+      g.event.listen('open-feedback', () => openFeedback()).then((unsub: any) => unsubs.push(unsub)).catch(() => {})
+      g.event.listen('open-about', () => openAbout()).then((unsub: any) => unsubs.push(unsub)).catch(() => {})
+      return () => unsubs.forEach(fn => {
+        try { fn() } catch {}
+      })
+    }
+  }, [])
 
   const loadDecks = async () => {
     try {
@@ -413,19 +427,6 @@ function App() {
   if (!backendConnected) {
     return <ConnectionStatus onConnected={() => setBackendConnected(true)} />
   }
-
-  // 响应 Tauri 顶栏菜单事件（open-feedback / open-about）
-  useEffect(() => {
-    const g: any = (window as any).__TAURI__
-    if (g?.event?.listen) {
-      const unsubs: Array<() => void> = []
-      g.event.listen('open-feedback', () => openFeedback()).then((unsub: any) => unsubs.push(unsub)).catch(() => {})
-      g.event.listen('open-about', () => openAbout()).then((unsub: any) => unsubs.push(unsub)).catch(() => {})
-      return () => unsubs.forEach(fn => {
-        try { fn() } catch {}
-      })
-    }
-  }, [])
 
   return (
     <AppShell
