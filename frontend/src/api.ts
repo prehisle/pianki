@@ -32,6 +32,7 @@ export interface Deck {
 export interface Card {
   id: number
   deck_id: number
+  guid: string
   front_text?: string
   front_image?: string
   back_text?: string

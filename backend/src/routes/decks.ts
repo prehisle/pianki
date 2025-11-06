@@ -161,7 +161,8 @@ router.post('/import', upload.single('file'), async (req, res) => {
           front_text: card.front_text,
           front_image: card.front_image,
           back_text: card.back_text,
-          back_image: card.back_image
+          back_image: card.back_image,
+          guid: card.guid
         }))
       );
     }

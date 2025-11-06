@@ -72,7 +72,16 @@ router.get('/:id', (req, res) => {
 // 创建卡片
 router.post('/', (req, res) => {
   try {
-    const { deck_id, front_text, front_image, back_text, back_image, insert_before_id, insert_after_id }: CreateCardInput = req.body;
+    const {
+      deck_id,
+      front_text,
+      front_image,
+      back_text,
+      back_image,
+      insert_before_id,
+      insert_after_id,
+      guid
+    }: CreateCardInput = req.body;
 
     if (!deck_id) {
       return res.status(400).json({ error: '缺少 deck_id' });
@@ -84,6 +93,7 @@ router.post('/', (req, res) => {
       front_image,
       back_text,
       back_image,
+      guid,
       insert_before_id,
       insert_after_id
     });

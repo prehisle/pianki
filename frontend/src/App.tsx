@@ -296,6 +296,16 @@ function App() {
   const handleExport = async () => {
     if (!currentDeckId) return
 
+    const notificationId = `export-${Date.now()}`
+    notifications.show({
+      id: notificationId,
+      title: '导出中',
+      message: '正在准备导出...',
+      color: 'blue',
+      loading: true,
+      autoClose: false
+    })
+
     try {
       const blob = await exportDeck(currentDeckId)
       const deckName = decks.find(d => d.id === currentDeckId)?.name || 'deck'
@@ -313,10 +323,27 @@ function App() {
           defaultPath: suggested,
           filters: [{ name: 'Anki Package', extensions: ['apkg'] }]
         })
-        if (!targetPath) return
+        if (!targetPath) {
+          notifications.update({
+            id: notificationId,
+            title: '已取消',
+            message: '已取消导出',
+            color: 'yellow',
+            loading: false,
+            autoClose: 2000
+          })
+          return
+        }
         const buffer = new Uint8Array(await blob.arrayBuffer())
         await writeFile(targetPath, buffer)
-        notifications.show({ title: '成功', message: `已保存到：${targetPath}`, color: 'green' })
+        notifications.update({
+          id: notificationId,
+          title: '成功',
+          message: `已保存到：${targetPath}`,
+          color: 'green',
+          loading: false,
+          autoClose: 4000
+        })
       } else {
         // 浏览器端：使用 a[href] 触发下载
         const url = window.URL.createObjectURL(blob)
@@ -325,14 +352,25 @@ function App() {
         a.download = `${deckName}.apkg`
         a.click()
         window.URL.revokeObjectURL(url)
-        setTimeout(() => notifications.show({ title: '成功', message: '导出成功', color: 'green' }), 300)
+        // 浏览器环境下无法得知用户何时保存完成，所以在触发下载后立即更新通知
+        notifications.update({
+          id: notificationId,
+          title: '准备就绪',
+          message: '请在浏览器对话框中选择保存位置',
+          color: 'blue',
+          loading: false,
+          autoClose: 4000
+        })
       }
     } catch (error) {
       console.error('导出失败:', error)
-      notifications.show({
+      notifications.update({
+        id: notificationId,
         title: '错误',
         message: '导出失败: ' + (error as Error).message,
         color: 'red',
+        loading: false,
+        autoClose: 4000
       })
     }
   }

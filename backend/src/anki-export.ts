@@ -1,4 +1,3 @@
-import AnkiExport from 'anki-apkg-export';
 import { marked } from 'marked';
 import path from 'path';
 import fs from 'fs';
@@ -184,8 +183,62 @@ function processContent(markdown: string, apkg: any): string {
   return ANKI_CARD_STYLE + html;
 }
 
+type ExporterInstance = {
+  addMedia(filename: string, data: Buffer): void;
+  addCard(front: string, back: string): void;
+  save(options?: unknown): Promise<Buffer> | Buffer;
+};
+
+function createExporter(deckName: string): ExporterInstance {
+  const previousModule = (global as Record<string, unknown>).Module;
+  const cacheKey = require.resolve('sql.js');
+  if (require.cache[cacheKey]) {
+    delete require.cache[cacheKey];
+  }
+
+  (global as Record<string, unknown>).Module = {
+    TOTAL_MEMORY: 256 * 1024 * 1024,
+    ALLOW_MEMORY_GROWTH: true,
+    TOTAL_STACK: 4 * 1024 * 1024
+  };
+
+  const sql = require('sql.js');
+
+  if (previousModule === undefined) {
+    delete (global as Record<string, unknown>).Module;
+  } else {
+    (global as Record<string, unknown>).Module = previousModule;
+  }
+
+  const Exporter = require('anki-apkg-export/dist/exporter').default;
+  const createTemplate = require('anki-apkg-export/dist/template').default;
+
+  return new Exporter(deckName, {
+    template: createTemplate(),
+    sql
+  });
+}
+
+function addCardWithGuid(apkg: ExporterInstance, front: string, back: string, guid?: string) {
+  const exporter = apkg as unknown as {
+    _getNoteGuid: (...args: any[]) => string;
+  };
+  if (!guid) {
+    apkg.addCard(front, back);
+    return;
+  }
+
+  const originalGetter = exporter._getNoteGuid.bind(exporter);
+  exporter._getNoteGuid = () => guid;
+  try {
+    apkg.addCard(front, back);
+  } finally {
+    exporter._getNoteGuid = originalGetter;
+  }
+}
+
 export async function exportToAnki(deck: Deck, cards: Card[]): Promise<Buffer> {
-  const apkg = new AnkiExport(deck.name);
+  const apkg = createExporter(deck.name);
 
   for (const card of cards) {
     // 处理正面和背面内容
@@ -218,7 +271,7 @@ export async function exportToAnki(deck: Deck, cards: Card[]): Promise<Buffer> {
 
     // 添加卡片到Anki导出
     if (frontContent || backContent) {
-      apkg.addCard(frontContent || '(空)', backContent || '(空)');
+      addCardWithGuid(apkg, frontContent || '(空)', backContent || '(空)', card.guid);
     }
   }
 

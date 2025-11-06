@@ -1,3 +1,4 @@
+import { randomBytes, createHash } from 'crypto';
 import { Card, CreateCardInput, UpdateCardInput } from '../../types';
 import { getDb } from '../connection';
 import { nextId } from '../meta';
@@ -11,6 +12,7 @@ export interface ListCardsParams {
 const CARD_COLUMNS = `
   id,
   deck_id,
+  guid,
   front_text,
   front_image,
   back_text,
@@ -49,6 +51,7 @@ export function createCard(input: CreateCardInput & { insert_before_id?: number;
   const db = getDb();
   const id = nextId('nextCardId');
   const now = new Date().toISOString();
+  const guid = input.guid && input.guid.trim().length > 0 ? input.guid.trim() : generateUniqueGuid(db);
   // 计算 sort_key（自定义顺序）
   let sortKey = 0;
   if (input.insert_before_id || input.insert_after_id) {
@@ -87,6 +90,7 @@ export function createCard(input: CreateCardInput & { insert_before_id?: number;
         front_image,
         back_text,
         back_image,
+        guid,
         sort_key,
         created_at,
         updated_at
@@ -118,6 +122,7 @@ export function createCard(input: CreateCardInput & { insert_before_id?: number;
   return {
     id,
     deck_id: input.deck_id,
+    guid,
     front_text: input.front_text,
     front_image: input.front_image,
     back_text: input.back_text,
@@ -171,6 +176,7 @@ export interface BulkCardInput {
   back_image?: string;
   front_text?: string;
   back_text?: string;
+  guid?: string;
 }
 
 export function bulkInsertCards(deckId: number, cards: BulkCardInput[]): number {
@@ -184,20 +190,24 @@ export function bulkInsertCards(deckId: number, cards: BulkCardInput[]): number 
       INSERT INTO cards (
         id,
         deck_id,
+        guid,
         front_text,
         front_image,
         back_text,
         back_image,
+        sort_key,
         created_at,
         updated_at
       )
       VALUES (
         @id,
         @deck_id,
+        @guid,
         @front_text,
         @front_image,
         @back_text,
         @back_image,
+        @sort_key,
         @created_at,
         @updated_at
       )
@@ -205,22 +215,39 @@ export function bulkInsertCards(deckId: number, cards: BulkCardInput[]): number 
   );
 
   const now = new Date().toISOString();
+  const last = db
+    .prepare('SELECT sort_key FROM cards WHERE deck_id = ? ORDER BY sort_key DESC LIMIT 1')
+    .get(deckId) as { sort_key: number } | undefined;
+  let sortKey = last ? last.sort_key + 1000 : 1000;
   const run = db.transaction(() => {
     for (const card of cards) {
       const id = nextId('nextCardId');
+      const guid = card.guid && card.guid.trim().length > 0 ? card.guid.trim() : generateUniqueGuid(db);
       insert.run({
         id,
         deck_id: deckId,
+        guid,
         front_text: card.front_text ?? null,
         front_image: card.front_image ?? null,
         back_text: card.back_text ?? null,
         back_image: card.back_image ?? null,
+        sort_key: sortKey,
         created_at: now,
         updated_at: now
       });
+      sortKey += 1000;
     }
   });
 
   run();
   return cards.length;
+}
+
+function generateUniqueGuid(db: ReturnType<typeof getDb>): string {
+  const check = db.prepare('SELECT 1 FROM cards WHERE guid = ? LIMIT 1');
+  let guid: string;
+  do {
+    guid = createHash('sha1').update(randomBytes(32)).digest('hex');
+  } while (check.get(guid));
+  return guid;
 }

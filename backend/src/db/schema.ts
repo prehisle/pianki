@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const INITIAL_SCHEMA = `
 PRAGMA journal_mode = WAL;
@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS cards (
   front_image TEXT,
   back_text TEXT,
   back_image TEXT,
+  guid TEXT NOT NULL,
   sort_key REAL NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
@@ -33,6 +34,7 @@ CREATE TABLE IF NOT EXISTS cards (
 CREATE INDEX IF NOT EXISTS idx_cards_deck_id ON cards (deck_id);
 CREATE INDEX IF NOT EXISTS idx_cards_created_at ON cards (created_at);
 CREATE INDEX IF NOT EXISTS idx_cards_updated_at ON cards (updated_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_cards_guid ON cards (guid);
 `;
 
 export const DEFAULT_META_ENTRIES: Record<string, string> = {

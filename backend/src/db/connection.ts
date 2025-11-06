@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import { INITIAL_SCHEMA, DEFAULT_META_ENTRIES, SCHEMA_VERSION } from './schema';
 import { sqlitePath, ensureDirectories } from './paths';
 import { resolveBetterSqliteNativeBinding } from './native-binding';
+import { randomBytes, createHash } from 'crypto';
 
 let dbInstance: BetterSqliteDatabase | null = null;
 
@@ -44,32 +45,22 @@ export async function ensureSchema() {
       });
     });
     transaction();
-  } else if (Number(existingVersionRow.value) !== SCHEMA_VERSION) {
-    // 简单迁移：v1 -> v2 增加 sort_key 并初始化
-    const from = Number(existingVersionRow.value);
-    if (from === 1 && SCHEMA_VERSION === 2) {
-      // 检查列是否存在
-      const cols = db.prepare("PRAGMA table_info('cards')").all() as Array<{ name: string }>;
-      const hasSortKey = cols.some((c) => c.name === 'sort_key');
-      if (!hasSortKey) {
-        db.prepare('ALTER TABLE cards ADD COLUMN sort_key REAL NOT NULL DEFAULT 0').run();
-      }
+  } else {
+    let currentVersion = Number(existingVersionRow.value);
 
-      // 按 deck 分配稀疏排序键（按创建时间升序），步长 1000
-      const deckRows = db.prepare('SELECT id FROM decks ORDER BY id').all() as Array<{ id: number }>;
-      for (const d of deckRows) {
-        const rows = db
-          .prepare('SELECT id FROM cards WHERE deck_id = ? ORDER BY datetime(created_at) ASC, id ASC')
-          .all(d.id) as Array<{ id: number }>;
-        let key = 1000;
-        for (const r of rows) {
-          db.prepare('UPDATE cards SET sort_key = ? WHERE id = ?').run(key, r.id);
-          key += 1000;
-        }
-      }
-      // 更新版本
-      db.prepare('UPDATE meta SET value = ? WHERE key = ?').run(String(SCHEMA_VERSION), 'schema_version');
-    } else {
+    if (currentVersion < 2 && SCHEMA_VERSION >= 2) {
+      migrateV1ToV2(db);
+      currentVersion = 2;
+      db.prepare('UPDATE meta SET value = ? WHERE key = ?').run('2', 'schema_version');
+    }
+
+    if (currentVersion < 3 && SCHEMA_VERSION >= 3) {
+      migrateV2ToV3(db);
+      currentVersion = 3;
+      db.prepare('UPDATE meta SET value = ? WHERE key = ?').run('3', 'schema_version');
+    }
+
+    if (currentVersion !== SCHEMA_VERSION) {
       await fs.writeFile(
         sqlitePath + '.migration-required',
         `Unsupported schema version ${existingVersionRow.value}. Expected ${SCHEMA_VERSION}.`,
@@ -80,4 +71,50 @@ export async function ensureSchema() {
       );
     }
   }
+}
+
+function migrateV1ToV2(db: BetterSqliteDatabase) {
+  const cols = db.prepare("PRAGMA table_info('cards')").all() as Array<{ name: string }>;
+  const hasSortKey = cols.some((c) => c.name === 'sort_key');
+  if (!hasSortKey) {
+    db.prepare('ALTER TABLE cards ADD COLUMN sort_key REAL NOT NULL DEFAULT 0').run();
+  }
+
+  const deckRows = db.prepare('SELECT id FROM decks ORDER BY id').all() as Array<{ id: number }>;
+  for (const d of deckRows) {
+    const rows = db
+      .prepare('SELECT id FROM cards WHERE deck_id = ? ORDER BY datetime(created_at) ASC, id ASC')
+      .all(d.id) as Array<{ id: number }>;
+    let key = 1000;
+    for (const r of rows) {
+      db.prepare('UPDATE cards SET sort_key = ? WHERE id = ?').run(key, r.id);
+      key += 1000;
+    }
+  }
+}
+
+function migrateV2ToV3(db: BetterSqliteDatabase) {
+  const cols = db.prepare("PRAGMA table_info('cards')").all() as Array<{ name: string }>;
+  const hasGuid = cols.some((c) => c.name === 'guid');
+  if (!hasGuid) {
+    db.prepare('ALTER TABLE cards ADD COLUMN guid TEXT').run();
+  }
+
+  const selectExisting = db.prepare('SELECT guid FROM cards WHERE guid = ? LIMIT 1');
+  const updateGuid = db.prepare('UPDATE cards SET guid = ? WHERE id = ?');
+  const rows = db
+    .prepare('SELECT id, guid FROM cards')
+    .all() as Array<{ id: number; guid: string | null | undefined }>;
+  for (const row of rows) {
+    if (row.guid && row.guid.trim().length > 0) {
+      continue;
+    }
+    let guid: string;
+    do {
+      guid = createHash('sha1').update(randomBytes(32)).digest('hex');
+    } while (selectExisting.get(guid));
+    updateGuid.run(guid, row.id);
+  }
+
+  db.prepare('CREATE UNIQUE INDEX IF NOT EXISTS idx_cards_guid ON cards (guid)').run();
 }

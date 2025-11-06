@@ -5,6 +5,7 @@ import Database from 'better-sqlite3';
 import { decompress as decompressZstd } from '@mongodb-js/zstd';
 
 interface ImportedCard {
+  guid?: string;
   front_text?: string;
   back_text?: string;
   front_image?: string;
@@ -391,8 +392,8 @@ export async function importFromAnki(apkgBuffer: Buffer, uploadsDir: string): Pr
     const fieldNameMap = resolveFieldNames();
 
     const notes = db
-      .prepare('SELECT id, flds, mid FROM notes')
-      .all() as Array<{ id: number; flds: string; mid: number }>;
+      .prepare('SELECT id, guid, flds, mid FROM notes')
+      .all() as Array<{ id: number; guid: string; flds: string; mid: number }>;
     const cards: ImportedCard[] = [];
 
     for (const note of notes) {
@@ -470,6 +471,7 @@ export async function importFromAnki(apkgBuffer: Buffer, uploadsDir: string): Pr
       const backText = backTextParts.join('\n\n').trim();
 
       cards.push({
+        guid: note.guid,
         front_text: frontText || undefined,
         front_image: frontImage,
         back_text: backText || undefined,
