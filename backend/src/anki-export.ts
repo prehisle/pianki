@@ -21,6 +21,11 @@ function extractImageUrls(markdown: string): string[] {
 // Anki卡片样式
 const ANKI_CARD_STYLE = `
 <style>
+/* Override Anki's default center alignment */
+.card {
+  text-align: left;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 16px;
