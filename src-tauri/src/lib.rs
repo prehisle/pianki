@@ -15,44 +15,7 @@ use tauri_plugin_opener::OpenerExt;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        // 顶栏菜单：Help -> Feedback / About
-        .menu(|app| {
-            let help = SubmenuBuilder::new(app, "Help")
-                .items(&[
-                    &MenuItemBuilder::new("Feedback & Support").id("help-feedback").build(app)?,
-                    &MenuItemBuilder::new("Report a bug (GitHub)").id("help-bug").build(app)?,
-                    &MenuItemBuilder::new("Open Discussions").id("help-discuss").build(app)?,
-                    &PredefinedMenuItem::about(app, Some("About Pianki"), None)?,
-                ])
-                .build()?;
-
-            MenuBuilder::new(app)
-                .items(&[&help])
-                .build()
-        })
-        .on_menu_event(|app, event| {
-            let id = event.id().as_ref();
-            match id {
-                "help-feedback" => {
-                    // 让前端打开内置反馈弹窗
-                    let _ = app.emit("open-feedback", ());
-                }
-                "help-bug" => {
-                    // 打开 GitHub Issues
-                    let _ = app.opener().open_url(
-                        "https://github.com/prehisle/pianki/issues/new/choose",
-                        None::<String>,
-                    );
-                }
-                "help-discuss" => {
-                    let _ = app.opener().open_url(
-                        "https://github.com/prehisle/pianki/discussions",
-                        None::<String>,
-                    );
-                }
-                _ => {}
-            }
-        })
+        // 移除桌面窗口菜单（不设置 menu）
         // 窗口关闭时兜底终止 sidecar
         .on_window_event(|window, event| {
             match event {

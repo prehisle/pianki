@@ -4,6 +4,7 @@ import { nextId } from '../meta';
 
 export interface ListCardsParams {
   deckId?: number;
+  order?: 'custom' | 'created' | 'updated';
 }
 
 const CARD_COLUMNS = `
@@ -19,12 +20,21 @@ const CARD_COLUMNS = `
 
 export function listCards(params: ListCardsParams = {}): Card[] {
   const db = getDb();
+  const order = params.order || 'custom';
+  const where = params.deckId ? 'WHERE deck_id = ?' : '';
+  const orderBy =
+    order === 'custom'
+      ? 'ORDER BY sort_key ASC, datetime(created_at) ASC'
+      : order === 'updated'
+      ? 'ORDER BY datetime(updated_at) DESC'
+      : 'ORDER BY datetime(created_at) DESC';
+
   if (params.deckId) {
     return db
-      .prepare(`SELECT ${CARD_COLUMNS} FROM cards WHERE deck_id = ? ORDER BY datetime(created_at) DESC`)
+      .prepare(`SELECT ${CARD_COLUMNS} FROM cards ${where} ${orderBy}`)
       .all(params.deckId) as Card[];
   }
-  return db.prepare(`SELECT ${CARD_COLUMNS} FROM cards ORDER BY datetime(created_at) DESC`).all() as Card[];
+  return db.prepare(`SELECT ${CARD_COLUMNS} FROM cards ${orderBy}`).all() as Card[];
 }
 
 export function getCardById(id: number): Card | undefined {
@@ -32,10 +42,38 @@ export function getCardById(id: number): Card | undefined {
   return db.prepare(`SELECT ${CARD_COLUMNS} FROM cards WHERE id = ?`).get(id) as Card | undefined;
 }
 
-export function createCard(input: CreateCardInput): Card {
+export function createCard(input: CreateCardInput & { insert_before_id?: number; insert_after_id?: number }): Card {
   const db = getDb();
   const id = nextId('nextCardId');
   const now = new Date().toISOString();
+  // 计算 sort_key（自定义顺序）
+  let sortKey = 0;
+  if (input.insert_before_id || input.insert_after_id) {
+    if (input.insert_before_id) {
+      // before: between left neighbor and anchor
+      const anchor = db.prepare('SELECT sort_key, deck_id FROM cards WHERE id = ?').get(input.insert_before_id) as any;
+      if (anchor && anchor.deck_id === input.deck_id) {
+        const left = db
+          .prepare('SELECT sort_key FROM cards WHERE deck_id = ? AND sort_key < ? ORDER BY sort_key DESC LIMIT 1')
+          .get(input.deck_id, anchor.sort_key) as any;
+        sortKey = left ? (left.sort_key + anchor.sort_key) / 2 : anchor.sort_key - 1000;
+      }
+    } else if (input.insert_after_id) {
+      const anchor = db.prepare('SELECT sort_key, deck_id FROM cards WHERE id = ?').get(input.insert_after_id) as any;
+      if (anchor && anchor.deck_id === input.deck_id) {
+        const right = db
+          .prepare('SELECT sort_key FROM cards WHERE deck_id = ? AND sort_key > ? ORDER BY sort_key ASC LIMIT 1')
+          .get(input.deck_id, anchor.sort_key) as any;
+        sortKey = right ? (right.sort_key + anchor.sort_key) / 2 : anchor.sort_key + 1000;
+      }
+    }
+  } else {
+    // 追加到末尾
+    const last = db
+      .prepare('SELECT sort_key FROM cards WHERE deck_id = ? ORDER BY sort_key DESC LIMIT 1')
+      .get(input.deck_id) as any;
+    sortKey = last ? last.sort_key + 1000 : 1000;
+  }
 
   db.prepare(
     `
@@ -46,6 +84,7 @@ export function createCard(input: CreateCardInput): Card {
         front_image,
         back_text,
         back_image,
+        sort_key,
         created_at,
         updated_at
       )
@@ -56,6 +95,7 @@ export function createCard(input: CreateCardInput): Card {
         @front_image,
         @back_text,
         @back_image,
+        @sort_key,
         @created_at,
         @updated_at
       )
@@ -67,6 +107,7 @@ export function createCard(input: CreateCardInput): Card {
     front_image: input.front_image ?? null,
     back_text: input.back_text ?? null,
     back_image: input.back_image ?? null,
+    sort_key: sortKey,
     created_at: now,
     updated_at: now
   });

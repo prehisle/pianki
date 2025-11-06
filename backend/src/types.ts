@@ -23,6 +23,8 @@ export interface CreateCardInput {
   front_image?: string;
   back_text?: string;
   back_image?: string;
+  insert_before_id?: number;
+  insert_after_id?: number;
 }
 
 export interface UpdateCardInput {

@@ -43,9 +43,10 @@ const upload = multer({
 // 获取所有卡片
 router.get('/', (req, res) => {
   try {
-    const { deck_id } = req.query;
+    const { deck_id, order } = req.query as any;
     const deckId = deck_id ? Number.parseInt(deck_id as string, 10) : undefined;
-    const cards = listCardsRepo({ deckId });
+    const ord = order === 'created' || order === 'updated' ? order : 'custom';
+    const cards = listCardsRepo({ deckId, order: ord });
     res.json(cards);
   } catch (error) {
     console.error('获取卡片失败:', error);
@@ -70,7 +71,7 @@ router.get('/:id', (req, res) => {
 // 创建卡片
 router.post('/', (req, res) => {
   try {
-    const { deck_id, front_text, front_image, back_text, back_image }: CreateCardInput = req.body;
+    const { deck_id, front_text, front_image, back_text, back_image, insert_before_id, insert_after_id }: CreateCardInput = req.body;
 
     if (!deck_id) {
       return res.status(400).json({ error: '缺少 deck_id' });
@@ -81,7 +82,9 @@ router.post('/', (req, res) => {
       front_text,
       front_image,
       back_text,
-      back_image
+      back_image,
+      insert_before_id,
+      insert_after_id
     });
 
     res.status(201).json(newCard);

@@ -36,6 +36,9 @@ export interface CreateCardInput {
   front_image?: string
   back_text?: string
   back_image?: string
+  // 自定义顺序插入（可选）
+  insert_before_id?: number
+  insert_after_id?: number
 }
 
 // 牌组相关API
@@ -83,8 +86,11 @@ export async function importDeck(file: File): Promise<{ deck: Deck; cardsImporte
 }
 
 // 卡片相关API
-export async function fetchCards(deckId?: number): Promise<Card[]> {
-  const url = deckId ? `${API_BASE_URL}/cards?deck_id=${deckId}` : `${API_BASE_URL}/cards`
+export async function fetchCards(deckId?: number, order: 'custom' | 'created' | 'updated' = 'custom'): Promise<Card[]> {
+  const params = new URLSearchParams()
+  if (deckId) params.set('deck_id', String(deckId))
+  if (order) params.set('order', order)
+  const url = `${API_BASE_URL}/cards${params.toString() ? `?${params.toString()}` : ''}`
   const response = await axios.get(url)
   if (!Array.isArray(response.data)) {
     console.error('获取卡片接口返回异常数据:', response.data)

@@ -1,5 +1,5 @@
-import { Card as MantineCard, Text, Button, Group, Stack, Grid, Badge, Tooltip, Box } from '@mantine/core'
-import { IconEdit, IconTrash, IconClock, IconClockEdit } from '@tabler/icons-react'
+import { Card as MantineCard, Text, Button, Group, Stack, Grid, Badge, Tooltip, Box, Menu, ActionIcon } from '@mantine/core'
+import { IconEdit, IconTrash, IconClock, IconClockEdit, IconDots, IconArrowBarUp, IconArrowBarDown } from '@tabler/icons-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Card } from '../api'
@@ -9,6 +9,8 @@ interface CardListProps {
   cards: Card[]
   onEdit: (card: Card) => void
   onDelete: (id: number) => void
+  onInsertBefore?: (anchorId: number) => void
+  onInsertAfter?: (anchorId: number) => void
 }
 
 // 自定义图片渲染器，将相对路径转换为完整URL
@@ -46,7 +48,7 @@ const formatDate = (dateString: string) => {
   })
 }
 
-export default function CardList({ cards, onEdit, onDelete }: CardListProps) {
+export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onInsertAfter }: CardListProps) {
   if (cards.length === 0) {
     return (
       <Text c="dimmed" ta="center" mt="xl" size="lg">
@@ -153,6 +155,27 @@ export default function CardList({ cards, onEdit, onDelete }: CardListProps) {
               >
                 删除
               </Button>
+              {(onInsertBefore || onInsertAfter) && (
+                <Menu position="bottom-end" shadow="md">
+                  <Menu.Target>
+                    <ActionIcon variant="light" size="sm" aria-label="更多">
+                      <IconDots size={16} />
+                    </ActionIcon>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    {onInsertBefore && (
+                      <Menu.Item leftSection={<IconArrowBarUp size={14} />} onClick={() => onInsertBefore!(card.id)}>
+                        在前面插入
+                      </Menu.Item>
+                    )}
+                    {onInsertAfter && (
+                      <Menu.Item leftSection={<IconArrowBarDown size={14} />} onClick={() => onInsertAfter!(card.id)}>
+                        在后面插入
+                      </Menu.Item>
+                    )}
+                  </Menu.Dropdown>
+                </Menu>
+              )}
             </Group>
           </Group>
         </MantineCard>

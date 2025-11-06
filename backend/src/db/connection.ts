@@ -45,14 +45,39 @@ export async function ensureSchema() {
     });
     transaction();
   } else if (Number(existingVersionRow.value) !== SCHEMA_VERSION) {
-    // Placeholder for future migrations
-    await fs.writeFile(
-      sqlitePath + '.migration-required',
-      `Unsupported schema version ${existingVersionRow.value}. Expected ${SCHEMA_VERSION}.`,
-      { flag: 'w' }
-    );
-    throw new Error(
-      `Unsupported schema version ${existingVersionRow.value}. Please implement migrations before continuing.`
-    );
+    // 简单迁移：v1 -> v2 增加 sort_key 并初始化
+    const from = Number(existingVersionRow.value);
+    if (from === 1 && SCHEMA_VERSION === 2) {
+      // 检查列是否存在
+      const cols = db.prepare("PRAGMA table_info('cards')").all() as Array<{ name: string }>;
+      const hasSortKey = cols.some((c) => c.name === 'sort_key');
+      if (!hasSortKey) {
+        db.prepare('ALTER TABLE cards ADD COLUMN sort_key REAL NOT NULL DEFAULT 0').run();
+      }
+
+      // 按 deck 分配稀疏排序键（按创建时间升序），步长 1000
+      const deckRows = db.prepare('SELECT id FROM decks ORDER BY id').all() as Array<{ id: number }>;
+      for (const d of deckRows) {
+        const rows = db
+          .prepare('SELECT id FROM cards WHERE deck_id = ? ORDER BY datetime(created_at) ASC, id ASC')
+          .all(d.id) as Array<{ id: number }>;
+        let key = 1000;
+        for (const r of rows) {
+          db.prepare('UPDATE cards SET sort_key = ? WHERE id = ?').run(key, r.id);
+          key += 1000;
+        }
+      }
+      // 更新版本
+      db.prepare('UPDATE meta SET value = ? WHERE key = ?').run(String(SCHEMA_VERSION), 'schema_version');
+    } else {
+      await fs.writeFile(
+        sqlitePath + '.migration-required',
+        `Unsupported schema version ${existingVersionRow.value}. Expected ${SCHEMA_VERSION}.`,
+        { flag: 'w' }
+      );
+      throw new Error(
+        `Unsupported schema version ${existingVersionRow.value}. Please implement migrations before continuing.`
+      );
+    }
   }
 }

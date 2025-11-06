@@ -1,9 +1,20 @@
 import { useState, useEffect, useMemo } from 'react'
-import { AppShell, Title, Container, Button, Group, Text, Loader, Center, TextInput, Select, SegmentedControl, Anchor, Stack, Divider } from '@mantine/core'
+import { AppShell, Title, Container, Button, Group, Text, Loader, Center, TextInput, Select, SegmentedControl, Anchor, Stack, Divider, Box } from '@mantine/core'
 import { IconPlus, IconMail, IconBrandGithub, IconUsersGroup } from '@tabler/icons-react'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
 import { fetchDecks, fetchCards, createCard, updateCard, deleteCard, exportDeck, importDeck, createDeck, updateDeck, deleteDeck, Deck, Card } from './api'
+// 打开外部链接（Tauri 或 浏览器）
+let openExternal: (url: string) => void = (url: string) => {
+  try {
+    // 尝试使用 Tauri opener 插件
+    // 动态 import，避免非 Tauri 环境报错
+    // @ts-ignore
+    import('@tauri-apps/plugin-opener').then(m => m.open(url)).catch(() => window.open(url, '_blank'))
+  } catch {
+    window.open(url, '_blank')
+  }
+}
 import CardEditor from './components/CardEditor'
 import CardList from './components/CardList'
 import DeckSelector from './components/DeckSelector'
@@ -30,12 +41,15 @@ function App() {
     isOpen: false,
     targetDeckId: null
   })
-  const [sortBy, setSortBy] = useState<'created' | 'updated'>('created')
+  const [sortBy, setSortBy] = useState<'custom' | 'created' | 'updated'>('custom')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const appVersion = '0.1.7'
 
   // 根据排序选项对卡片进行排序
   const sortedCards = useMemo(() => {
+    if (sortBy === 'custom') {
+      return cards // 保持服务端返回顺序
+    }
     const sorted = [...cards]
     sorted.sort((a, b) => {
       const dateA = new Date(sortBy === 'created' ? a.created_at : a.updated_at).getTime()
@@ -92,7 +106,7 @@ function App() {
     if (!currentDeckId) return
     setLoading(true)
     try {
-      const data = await fetchCards(currentDeckId)
+      const data = await fetchCards(currentDeckId, sortBy)
       setCards(data)
     } catch (error) {
       console.error('加载卡片失败:', error)
@@ -223,12 +237,19 @@ function App() {
       if (editingCard) {
         await updateCard(editingCard.id, cardData)
       } else {
-        await createCard({ ...cardData, deck_id: currentDeckId })
+        const insert = (window as any).__PIANKI_INSERT__ as { anchorId: number; position: 'before' | 'after' } | undefined
+        const payload: any = { ...cardData, deck_id: currentDeckId }
+        if (insert) {
+          if (insert.position === 'before') payload.insert_before_id = insert.anchorId
+          if (insert.position === 'after') payload.insert_after_id = insert.anchorId
+        }
+        await createCard(payload)
       }
       await loadCards()
       await loadDecks() // 重新加载牌组列表以更新卡片计数
       setEditingCard(null)
       setIsCreating(false)
+      ;(window as any).__PIANKI_INSERT__ = undefined
       notifications.show({
         title: '成功',
         message: editingCard ? '卡片已更新' : '卡片已创建',
@@ -345,15 +366,11 @@ function App() {
           </Group>
           <Group>
             <IconBrandGithub size={18} />
-            <Anchor href="https://github.com/prehisle/pianki/issues/new/choose" target="_blank">
-              GitHub Issues（报告问题/提建议）
-            </Anchor>
+            <Anchor onClick={() => openExternal('https://github.com/prehisle/pianki/issues/new/choose')}>GitHub Issues（报告问题/提建议）</Anchor>
           </Group>
           <Group>
             <IconBrandGithub size={18} />
-            <Anchor href="https://github.com/prehisle/pianki/discussions" target="_blank">
-              GitHub Discussions（讨论/使用交流）
-            </Anchor>
+            <Anchor onClick={() => openExternal('https://github.com/prehisle/pianki/discussions')}>GitHub Discussions（讨论/使用交流）</Anchor>
           </Group>
           <Group>
             <IconUsersGroup size={18} />
@@ -380,7 +397,7 @@ function App() {
           <Divider my={6} />
           <Group>
             <IconBrandGithub size={18} />
-            <Anchor href="https://github.com/prehisle/pianki" target="_blank">项目主页（GitHub）</Anchor>
+            <Anchor onClick={() => openExternal('https://github.com/prehisle/pianki')}>项目主页（GitHub）</Anchor>
           </Group>
           <Group>
             <IconMail size={18} />
@@ -473,11 +490,23 @@ function App() {
                   onCancel={() => {
                     setEditingCard(null)
                     setIsCreating(false)
+                    ;(window as any).__PIANKI_INSERT__ = undefined
                   }}
                 />
               ) : (
                 <>
-                  <Group justify="space-between" mb="md">
+                  <Box
+                    style={{
+                      position: 'sticky',
+                      top: 0,
+                      zIndex: 5,
+                      backgroundColor: 'var(--mantine-color-body)',
+                      borderBottom: '1px solid var(--mantine-color-gray-2)',
+                      paddingBottom: '0.375rem',
+                      marginBottom: '0.5rem'
+                    }}
+                  >
+                  <Group justify="space-between">
                     <Button
                       leftSection={<IconPlus size={16} />}
                       onClick={() => setIsCreating(true)}
@@ -487,8 +516,13 @@ function App() {
                     <Group gap="xs">
                       <Select
                         value={sortBy}
-                        onChange={(value) => setSortBy(value as 'created' | 'updated')}
+                        onChange={(value) => {
+                          setSortBy((value as any) || 'custom')
+                          // 重新加载，使用服务端排序
+                          setTimeout(() => loadCards(), 0)
+                        }}
                         data={[
+                          { value: 'custom', label: '自定义顺序' },
                           { value: 'created', label: '创建时间' },
                           { value: 'updated', label: '修改时间' }
                         ]}
@@ -509,6 +543,7 @@ function App() {
                       </Text>
                     </Group>
                   </Group>
+                  </Box>
 
                   {loading ? (
                     <Center h={200}>
@@ -519,6 +554,15 @@ function App() {
                       cards={sortedCards}
                       onEdit={setEditingCard}
                       onDelete={handleDeleteCard}
+                      onInsertBefore={(anchorId) => {
+                        setIsCreating(true)
+                        // 临时保存到全局 window 以简化最小实现
+                        ;(window as any).__PIANKI_INSERT__ = { anchorId, position: 'before' }
+                      }}
+                      onInsertAfter={(anchorId) => {
+                        setIsCreating(true)
+                        ;(window as any).__PIANKI_INSERT__ = { anchorId, position: 'after' }
+                      }}
                     />
                   )}
                 </>

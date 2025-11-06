@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const INITIAL_SCHEMA = `
 PRAGMA journal_mode = WAL;
@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS cards (
   front_image TEXT,
   back_text TEXT,
   back_image TEXT,
+  sort_key REAL NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (deck_id) REFERENCES decks(id) ON DELETE CASCADE
