@@ -72,7 +72,7 @@ app.use('/uploads', express.static(uploadsDir));
 // 初始化数据库
 log('初始化数据库...');
 initDatabase()
-  .then(() => {
+  .then(async () => {
     log('数据库初始化成功');
 
     // 路由
