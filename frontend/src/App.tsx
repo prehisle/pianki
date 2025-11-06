@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { AppShell, Title, Container, Button, Group, Text, Loader, Center, TextInput, Select, SegmentedControl, Anchor, Stack } from '@mantine/core'
+import { AppShell, Title, Container, Button, Group, Text, Loader, Center, TextInput, Select, SegmentedControl, Anchor, Stack, Divider } from '@mantine/core'
 import { IconPlus, IconMail, IconBrandGithub, IconUsersGroup } from '@tabler/icons-react'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
@@ -354,6 +354,40 @@ function App() {
     })
   }
 
+  const openAbout = () => {
+    const email = 'prehisle@gmail.com'
+    const qqGroup = '188193559'
+    modals.open({
+      title: '关于 Pianki',
+      children: (
+        <Stack gap="xs">
+          <Text size="sm">版本：{appVersion}</Text>
+          <Text size="sm">Pianki 是一个专注于高效制作与导出 Anki 卡片的开源工具。</Text>
+          <Divider my={6} />
+          <Group>
+            <IconBrandGithub size={18} />
+            <Anchor href="https://github.com/prehisle/pianki" target="_blank">项目主页（GitHub）</Anchor>
+          </Group>
+          <Group>
+            <IconMail size={18} />
+            <Anchor href={`mailto:${email}?subject=${encodeURIComponent('Pianki 反馈 ' + appVersion)}`} target="_blank">
+              联系邮箱：{email}
+            </Anchor>
+          </Group>
+          <Group>
+            <IconUsersGroup size={18} />
+            <Text size="sm">QQ群：{qqGroup}（点击复制）</Text>
+            <Button size="xs" variant="light" onClick={() => {
+              navigator.clipboard?.writeText(qqGroup)
+              notifications.show({ title: '已复制', message: 'QQ群号已复制到剪贴板', color: 'green' })
+            }}>复制</Button>
+          </Group>
+          <Text c="dimmed" size="xs">Copyright © Pianki Contributors</Text>
+        </Stack>
+      )
+    })
+  }
+
   // 处理牌组切换
   const handleSelectDeck = (deckId: number) => {
     // 如果正在编辑或创建卡片，提示用户
@@ -390,7 +424,10 @@ function App() {
         <Group h="100%" px="md">
           <Title order={2}>📚 Pianki - Anki卡片制作工具</Title>
           <div style={{ flex: 1 }} />
-          <Button variant="light" size="xs" onClick={openFeedback}>反馈与支持</Button>
+          <Group gap="xs">
+            <Button variant="light" size="xs" onClick={openFeedback}>反馈与支持</Button>
+            <Button variant="subtle" size="xs" onClick={openAbout}>关于</Button>
+          </Group>
         </Group>
       </AppShell.Header>
 
