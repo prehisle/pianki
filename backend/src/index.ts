@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import { initDatabase, uploadsDir } from './database';
+import { closeDb } from './db/connection';
 import { baseDataDir, ensureDirectories as ensureDataDirectories } from './db/paths';
 import cardsRouter from './routes/cards';
 import decksRouter from './routes/decks';
@@ -93,13 +94,56 @@ initDatabase()
       res.status(500).json({ error: '服务器内部错误', message: err.message });
     });
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       log(`🚀 服务器成功启动！`);
       log(`🌐 HTTP 地址: http://localhost:${PORT}`);
       log(`📡 API 地址: http://localhost:${PORT}/api`);
       log(`📁 上传目录: ${uploadsDir}`);
       log('===========================');
     });
+
+    // 优雅退出与父进程存活检测，避免安装器升级时文件被占用
+    const shutdown = (reason: string) => {
+      try { log(`收到退出信号：${reason}，正在关闭服务器...`); } catch {}
+      try { server.close(); } catch {}
+      try { closeDb(); } catch {}
+      // 延时退出，给系统释放句柄时间
+      setTimeout(() => process.exit(0), 200).unref();
+    };
+
+    // 信号处理（Windows/Linux/macOS）
+    ['SIGINT','SIGTERM','SIGBREAK','SIGHUP'].forEach((sig) => {
+      try {
+        process.on(sig as NodeJS.Signals, () => shutdown(sig));
+      } catch {}
+    });
+
+    process.on('uncaughtException', (err) => {
+      log(`未捕获异常：${(err as Error).message}`);
+      shutdown('uncaughtException');
+    });
+
+    process.on('beforeExit', () => shutdown('beforeExit'));
+    process.on('exit', () => shutdown('exit'));
+
+    // 父进程心跳：父进程消失则自杀（安装/升级时主进程被强制结束的兜底）
+    const parentPid = process.ppid;
+    const checkParentAlive = () => {
+      try {
+        process.kill(parentPid, 0); // 仅检测是否存在
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    const interval = setInterval(() => {
+      if (!checkParentAlive()) {
+        log('检测到父进程不存在，准备退出以释放文件锁...');
+        clearInterval(interval);
+        shutdown('parent-gone');
+      }
+    }, 2000);
+    interval.unref?.();
   })
   .catch((error) => {
     log(`❌ 数据库初始化失败: ${error.message}`);

@@ -5,6 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tauri::{Manager, RunEvent};
+use tauri::window::WindowEvent;
 use tauri::menu::{MenuBuilder, SubmenuBuilder, MenuItemBuilder, PredefinedMenuItem, AboutMetadata};
 use tauri_plugin_shell::{
     process::{CommandChild, CommandEvent},
@@ -49,6 +50,16 @@ pub fn run() {
                         "https://github.com/prehisle/pianki/discussions",
                         None,
                     );
+                }
+                _ => {}
+            }
+        })
+        // 窗口关闭时兜底终止 sidecar
+        .on_window_event(|window, event| {
+            match event {
+                WindowEvent::CloseRequested { .. } | WindowEvent::Destroyed => {
+                    let state = window.app_handle().state::<BackendState>();
+                    state.kill_child();
                 }
                 _ => {}
             }
