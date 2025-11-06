@@ -60,25 +60,20 @@ export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onIn
   }
 
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const [viewportHeight, setViewportHeight] = useState<number>(() => (typeof window !== 'undefined' ? window.innerHeight : 0))
+  const [viewportHeight, setViewportHeight] = useState<number>(360)
 
   const updateHeight = useCallback(() => {
-    if (!containerRef.current || typeof window === 'undefined') {
+    if (!containerRef.current) {
       return
     }
-    const rect = containerRef.current.getBoundingClientRect()
-    const padding = 16 // leave a small breathing room with surrounding padding
-    const newHeight = Math.max(window.innerHeight - rect.top - padding, 120)
+    const parent = containerRef.current.parentElement
+    if (!parent) {
+      return
+    }
+    const padding = 8
+    const newHeight = Math.max(parent.clientHeight - padding, 160)
     setViewportHeight(prev => (Math.abs(prev - newHeight) > 1 ? newHeight : prev))
   }, [])
-
-  useEffect(() => {
-    updateHeight()
-    window.addEventListener('resize', updateHeight)
-    return () => {
-      window.removeEventListener('resize', updateHeight)
-    }
-  }, [updateHeight])
 
   useEffect(() => {
     updateHeight()
@@ -245,9 +240,9 @@ export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onIn
   }
 
   return (
-    <div ref={containerRef} style={{ height: '100%', minHeight: 0 }}>
+    <div ref={containerRef} style={{ height: '100%', minHeight: 0, display: 'flex' }}>
       <Virtuoso
-        style={{ height: viewportHeight ? `${viewportHeight}px` : '100%' }}
+        style={{ flex: 1, height: viewportHeight ? `${viewportHeight}px` : '100%' }}
         totalCount={cards.length}
         itemContent={(index) => renderCard(index)}
         computeItemKey={(index) => String(cards[index]?.id ?? index)}
