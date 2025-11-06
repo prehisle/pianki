@@ -5,8 +5,8 @@ use std::{
     time::{Duration, Instant},
 };
 use tauri::{Manager, RunEvent};
-use tauri::window::WindowEvent;
-use tauri::menu::{MenuBuilder, SubmenuBuilder, MenuItemBuilder, PredefinedMenuItem, AboutMetadata};
+use tauri::app::WindowEvent;
+use tauri::menu::{MenuBuilder, SubmenuBuilder, MenuItemBuilder, PredefinedMenuItem};
 use tauri_plugin_shell::{
     process::{CommandChild, CommandEvent},
     ShellExt,
@@ -17,13 +17,12 @@ pub fn run() {
     tauri::Builder::default()
         // 顶栏菜单：Help -> Feedback / About
         .menu(|app| {
-            let help = SubmenuBuilder::new(app)
-                .text("Help")
+            let help = SubmenuBuilder::new(app, "Help")
                 .items(&[
                     &MenuItemBuilder::new("Feedback & Support").id("help-feedback").build(app)?,
                     &MenuItemBuilder::new("Report a bug (GitHub)").id("help-bug").build(app)?,
                     &MenuItemBuilder::new("Open Discussions").id("help-discuss").build(app)?,
-                    &PredefinedMenuItem::about(app, Some(AboutMetadata::new()))?,
+                    &PredefinedMenuItem::about(app, Some("About Pianki"), None)?,
                 ])
                 .build()?;
 
@@ -36,7 +35,7 @@ pub fn run() {
             match id {
                 "help-feedback" => {
                     // 让前端打开内置反馈弹窗
-                    let _ = app.emit_all("open-feedback", ());
+                    let _ = app.emit("open-feedback", ());
                 }
                 "help-bug" => {
                     // 打开 GitHub Issues
