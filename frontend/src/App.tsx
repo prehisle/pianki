@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { AppShell, Title, Container, Button, Group, Text, Loader, Center, TextInput, Select, SegmentedControl } from '@mantine/core'
-import { IconPlus } from '@tabler/icons-react'
+import { AppShell, Title, Container, Button, Group, Text, Loader, Center, TextInput, Select, SegmentedControl, Anchor, Stack } from '@mantine/core'
+import { IconPlus, IconMail, IconBrandGithub, IconUsersGroup } from '@tabler/icons-react'
 import { modals } from '@mantine/modals'
 import { notifications } from '@mantine/notifications'
 import { fetchDecks, fetchCards, createCard, updateCard, deleteCard, exportDeck, importDeck, createDeck, updateDeck, deleteDeck, Deck, Card } from './api'
@@ -32,6 +32,7 @@ function App() {
   })
   const [sortBy, setSortBy] = useState<'created' | 'updated'>('created')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const appVersion = '0.1.5'
 
   // 根据排序选项对卡片进行排序
   const sortedCards = useMemo(() => {
@@ -315,6 +316,44 @@ function App() {
     }
   }
 
+  const openFeedback = () => {
+    const email = 'prehisle@gmail.com'
+    const qqGroup = '188193559'
+    modals.open({
+      title: '反馈与支持',
+      children: (
+        <Stack gap="xs">
+          <Group>
+            <IconMail size={18} />
+            <Anchor href={`mailto:${email}?subject=${encodeURIComponent('Pianki 反馈 ' + appVersion)}`} target="_blank">
+              发送邮件：{email}
+            </Anchor>
+          </Group>
+          <Group>
+            <IconBrandGithub size={18} />
+            <Anchor href="https://github.com/prehisle/pianki/issues/new/choose" target="_blank">
+              GitHub Issues（报告问题/提建议）
+            </Anchor>
+          </Group>
+          <Group>
+            <IconBrandGithub size={18} />
+            <Anchor href="https://github.com/prehisle/pianki/discussions" target="_blank">
+              GitHub Discussions（讨论/使用交流）
+            </Anchor>
+          </Group>
+          <Group>
+            <IconUsersGroup size={18} />
+            <Text size="sm">QQ群：{qqGroup} <Anchor onClick={() => {
+              navigator.clipboard?.writeText(qqGroup)
+              notifications.show({ title: '已复制', message: 'QQ群号已复制到剪贴板', color: 'green' })
+            }}>复制</Anchor></Text>
+          </Group>
+          <Text c="dimmed" size="xs">提交问题时请尽量附上复现步骤与截图。</Text>
+        </Stack>
+      )
+    })
+  }
+
   // 处理牌组切换
   const handleSelectDeck = (deckId: number) => {
     // 如果正在编辑或创建卡片，提示用户
@@ -350,6 +389,8 @@ function App() {
       <AppShell.Header>
         <Group h="100%" px="md">
           <Title order={2}>📚 Pianki - Anki卡片制作工具</Title>
+          <div style={{ flex: 1 }} />
+          <Button variant="light" size="xs" onClick={openFeedback}>反馈与支持</Button>
         </Group>
       </AppShell.Header>
 

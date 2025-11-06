@@ -2,7 +2,7 @@
 
 一个现代化的Anki卡片制作Web应用，支持Markdown格式、实时预览、图片插入，可导出为标准.apkg格式。
 
-![Version](https://img.shields.io/badge/version-0.1.3-blue)
+![Version](https://img.shields.io/badge/version-0.1.5-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 
@@ -250,6 +250,13 @@ A: 可以！点击左侧边栏的"➕"按钮即可创建新牌组。
 
 **Q: Markdown预览和Anki显示一致吗？**
 A: 基本一致。应用会将Markdown准确转换为HTML，包括格式和图片。
+
+## 📣 反馈与联系
+
+- 邮箱：prehisle@gmail.com
+- GitHub Issues：https://github.com/prehisle/pianki/issues/new/choose
+- GitHub Discussions：https://github.com/prehisle/pianki/discussions
+- QQ群：188193559（无法直接跳转时可手动搜索，或复制群号加入）
 
 ## 📄 许可证
 
