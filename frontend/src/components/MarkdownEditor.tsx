@@ -14,6 +14,7 @@ import {
 import { IconPhoto, IconBold, IconItalic, IconCode, IconHelp } from '@tabler/icons-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks'
 import TurndownService from 'turndown'
 import { uploadImage } from '../api'
 import { modals } from '@mantine/modals'
@@ -330,7 +331,7 @@ export default function MarkdownEditor({ value, onChange, placeholder, label }: 
               {value ? (
                 <ReactMarkdown
                   className="markdown-content"
-                  remarkPlugins={[remarkGfm]}
+                  remarkPlugins={[remarkGfm, remarkBreaks]}
                   components={{
                     img: imageRenderer
                   }}

@@ -177,7 +177,8 @@ function processContent(markdown: string, apkg: any): string {
   }
 
   // 转换Markdown为HTML
-  const html = marked.parse(processedMarkdown, { async: false }) as string;
+  // 在 Anki 中也保留单个换行（与前端预览一致）
+  const html = marked.parse(processedMarkdown, { async: false, breaks: true }) as string;
 
   // 添加样式
   return ANKI_CARD_STYLE + html;
