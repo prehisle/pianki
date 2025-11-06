@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Card } from '../api'
 import '../styles/markdown.css'
+import { Virtuoso } from 'react-virtuoso'
 
 interface CardListProps {
   cards: Card[]
@@ -11,7 +12,6 @@ interface CardListProps {
   onDelete: (id: number) => void
   onInsertBefore?: (anchorId: number) => void
   onInsertAfter?: (anchorId: number) => void
-  showId?: boolean
 }
 
 // 自定义图片渲染器，将相对路径转换为完整URL
@@ -49,7 +49,7 @@ const formatDate = (dateString: string) => {
   })
 }
 
-export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onInsertAfter, showId }: CardListProps) {
+export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onInsertAfter }: CardListProps) {
   if (cards.length === 0) {
     return (
       <Text c="dimmed" ta="center" mt="xl" size="lg">
@@ -58,28 +58,26 @@ export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onIn
     )
   }
 
-  return (
-    <Stack gap="md">
-      {cards.map((card, index) => (
-        <MantineCard key={card.id} shadow="sm" padding="lg" radius="md" withBorder>
+  const renderCard = (index: number) => {
+    const card = cards[index]
+    return (
+      <MantineCard key={card.id} shadow="sm" padding="lg" radius="md" withBorder style={{ marginBottom: 12 }}>
           <Group justify="space-between" mb="xs">
             <Group gap={8}>
               <Badge variant="filled" size="lg" color="gray">#{index + 1}</Badge>
-              {showId && (
-                <Group gap={6}>
-                  <Text size="xs" c="dimmed">ID: {card.id}</Text>
-                  <Tooltip label="复制ID" withArrow>
-                    <ActionIcon
-                      variant="subtle"
-                      size="xs"
-                      aria-label="复制ID"
-                      onClick={() => navigator.clipboard?.writeText(String(card.id))}
-                    >
-                      <IconCopy size={14} />
-                    </ActionIcon>
-                  </Tooltip>
-                </Group>
-              )}
+              <Group gap={6}>
+                <Text size="xs" c="dimmed">ID: {card.id}</Text>
+                <Tooltip label="复制ID" withArrow>
+                  <ActionIcon
+                    variant="subtle"
+                    size="xs"
+                    aria-label="复制ID"
+                    onClick={() => navigator.clipboard?.writeText(String(card.id))}
+                  >
+                    <IconCopy size={14} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
             </Group>
           </Group>
           <Grid>
@@ -197,7 +195,16 @@ export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onIn
             </Group>
           </Group>
         </MantineCard>
-      ))}
-    </Stack>
+    )
+  }
+
+  return (
+    <div style={{ height: 'calc(100vh - 180px)' }}>
+      <Virtuoso
+        totalCount={cards.length}
+        itemContent={(index) => renderCard(index)}
+        overscan={200}
+      />
+    </div>
   )
 }

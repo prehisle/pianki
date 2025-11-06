@@ -42,46 +42,32 @@ function App() {
     targetDeckId: null
   })
   const [sortBy, setSortBy] = useState<'custom' | 'created' | 'updated'>('custom')
-  const [showId, setShowId] = useState(false)
   const [query, setQuery] = useState('')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const appVersion = '0.1.8'
 
   // 根据排序选项对卡片进行排序
-  const sortedCards = useMemo(() => {
-    if (sortBy === 'custom') {
-      return cards // 保持服务端返回顺序
-    }
-    const sorted = [...cards]
-    sorted.sort((a, b) => {
-      const dateA = new Date(sortBy === 'created' ? a.created_at : a.updated_at).getTime()
-      const dateB = new Date(sortBy === 'created' ? b.created_at : b.updated_at).getTime()
-      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB
-    })
-    return sorted
-  }, [cards, sortBy, sortOrder])
-
   const displayCards = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return sortedCards
-    return sortedCards.filter(c => {
+    if (!q) return cards
+    return cards.filter(c => {
       const f = (c.front_text || '').toLowerCase()
       const b = (c.back_text || '').toLowerCase()
       return f.includes(q) || b.includes(q) || String(c.id).includes(q)
     })
-  }, [sortedCards, query])
+  }, [cards, query])
 
   // 加载牌组列表
   useEffect(() => {
     loadDecks()
   }, [])
 
-  // 当选择牌组时加载卡片
+  // 根据牌组/排序变更加载卡片
   useEffect(() => {
     if (currentDeckId) {
       loadCards()
     }
-  }, [currentDeckId])
+  }, [currentDeckId, sortBy, sortOrder])
 
   // 响应 Tauri 顶栏菜单事件（open-feedback / open-about）
   // 注意：Hooks 必须在组件最外层调用，不能放在条件 return 之后
@@ -122,7 +108,7 @@ function App() {
     if (!currentDeckId) return
     setLoading(true)
     try {
-      const data = await fetchCards(currentDeckId, sortBy)
+      const data = await fetchCards(currentDeckId, sortBy, sortOrder)
       setCards(data)
     } catch (error) {
       console.error('加载卡片失败:', error)
@@ -550,11 +536,7 @@ function App() {
                       />
                       <Select
                         value={sortBy}
-                        onChange={(value) => {
-                          setSortBy((value as any) || 'custom')
-                          // 重新加载，使用服务端排序
-                          setTimeout(() => loadCards(), 0)
-                        }}
+                        onChange={(value) => setSortBy((value as any) || 'custom')}
                         data={[
                           { value: 'custom', label: '自定义顺序' },
                           { value: 'created', label: '创建时间' },
@@ -562,13 +544,6 @@ function App() {
                         ]}
                         size="xs"
                         w={110}
-                      />
-                      <Select
-                        value={showId ? '1' : '0'}
-                        onChange={(v) => setShowId(v === '1')}
-                        data={[{ value: '0', label: '隐藏ID' }, { value: '1', label: '显示ID' }]}
-                        size="xs"
-                        w={100}
                       />
                       <SegmentedControl
                         value={sortOrder}
@@ -604,7 +579,6 @@ function App() {
                         setIsCreating(true)
                         ;(window as any).__PIANKI_INSERT__ = { anchorId, position: 'after' }
                       }}
-                      showId={showId}
                     />
                   )}
                 </>

@@ -5,6 +5,7 @@ import { nextId } from '../meta';
 export interface ListCardsParams {
   deckId?: number;
   order?: 'custom' | 'created' | 'updated';
+  dir?: 'asc' | 'desc';
 }
 
 const CARD_COLUMNS = `
@@ -21,13 +22,15 @@ const CARD_COLUMNS = `
 export function listCards(params: ListCardsParams = {}): Card[] {
   const db = getDb();
   const order = params.order || 'custom';
+  const dir = (params.dir || 'desc').toUpperCase();
   const where = params.deckId ? 'WHERE deck_id = ?' : '';
+  // 注意：created_at/updated_at 为 ISO8601 字符串，直接比较可按时间排序且可命中索引
   const orderBy =
     order === 'custom'
-      ? 'ORDER BY sort_key ASC, datetime(created_at) ASC'
+      ? 'ORDER BY sort_key ASC, created_at ASC'
       : order === 'updated'
-      ? 'ORDER BY datetime(updated_at) DESC'
-      : 'ORDER BY datetime(created_at) DESC';
+      ? `ORDER BY updated_at ${dir}`
+      : `ORDER BY created_at ${dir}`;
 
   if (params.deckId) {
     return db

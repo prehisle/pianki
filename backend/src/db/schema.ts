@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS cards (
 );
 
 CREATE INDEX IF NOT EXISTS idx_cards_deck_id ON cards (deck_id);
+CREATE INDEX IF NOT EXISTS idx_cards_created_at ON cards (created_at);
+CREATE INDEX IF NOT EXISTS idx_cards_updated_at ON cards (updated_at);
 `;
 
 export const DEFAULT_META_ENTRIES: Record<string, string> = {

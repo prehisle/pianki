@@ -96,10 +96,15 @@ export async function importDeck(file: File): Promise<{ deck: Deck; cardsImporte
 }
 
 // 卡片相关API
-export async function fetchCards(deckId?: number, order: 'custom' | 'created' | 'updated' = 'custom'): Promise<Card[]> {
+export async function fetchCards(
+  deckId?: number,
+  order: 'custom' | 'created' | 'updated' = 'custom',
+  dir: 'asc' | 'desc' = 'desc'
+): Promise<Card[]> {
   const params = new URLSearchParams()
   if (deckId) params.set('deck_id', String(deckId))
   if (order) params.set('order', order)
+  if (dir) params.set('dir', dir)
   const url = `${API_BASE_URL}/cards${params.toString() ? `?${params.toString()}` : ''}`
   const response = await axios.get(url)
   if (!Array.isArray(response.data)) {

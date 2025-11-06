@@ -43,10 +43,11 @@ const upload = multer({
 // 获取所有卡片
 router.get('/', (req, res) => {
   try {
-    const { deck_id, order } = req.query as any;
+    const { deck_id, order, dir } = req.query as any;
     const deckId = deck_id ? Number.parseInt(deck_id as string, 10) : undefined;
     const ord = order === 'created' || order === 'updated' ? order : 'custom';
-    const cards = listCardsRepo({ deckId, order: ord });
+    const direction = dir === 'asc' ? 'asc' : 'desc';
+    const cards = listCardsRepo({ deckId, order: ord, dir: direction });
     res.json(cards);
   } catch (error) {
     console.error('获取卡片失败:', error);
