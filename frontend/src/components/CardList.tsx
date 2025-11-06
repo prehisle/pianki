@@ -5,7 +5,6 @@ import remarkGfm from 'remark-gfm'
 import { Card } from '../api'
 import '../styles/markdown.css'
 import { Virtuoso } from 'react-virtuoso'
-import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface CardListProps {
   cards: Card[]
@@ -58,39 +57,6 @@ export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onIn
       </Text>
     )
   }
-
-  const containerRef = useRef<HTMLDivElement | null>(null)
-  const [viewportHeight, setViewportHeight] = useState<number>(360)
-
-  const updateHeight = useCallback(() => {
-    if (!containerRef.current) {
-      return
-    }
-    const parent = containerRef.current.parentElement
-    if (!parent) {
-      return
-    }
-    const padding = 8
-    const newHeight = Math.max(parent.clientHeight - padding, 160)
-    setViewportHeight(prev => (Math.abs(prev - newHeight) > 1 ? newHeight : prev))
-  }, [])
-
-  useEffect(() => {
-    updateHeight()
-  }, [updateHeight, cards.length])
-
-  useEffect(() => {
-    if (typeof ResizeObserver === 'undefined') {
-      return
-    }
-    const parent = containerRef.current?.parentElement
-    if (!parent) {
-      return
-    }
-    const observer = new ResizeObserver(() => updateHeight())
-    observer.observe(parent)
-    return () => observer.disconnect()
-  }, [updateHeight])
 
   const renderCard = (index: number) => {
     const card = cards[index]
@@ -240,9 +206,9 @@ export default function CardList({ cards, onEdit, onDelete, onInsertBefore, onIn
   }
 
   return (
-    <div ref={containerRef} style={{ height: '100%', minHeight: 0, display: 'flex' }}>
+    <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
       <Virtuoso
-        style={{ flex: 1, height: viewportHeight ? `${viewportHeight}px` : '100%' }}
+        style={{ flex: 1, height: '100%' }}
         totalCount={cards.length}
         itemContent={(index) => renderCard(index)}
         computeItemKey={(index) => String(cards[index]?.id ?? index)}

@@ -567,7 +567,7 @@ function App() {
                   </Group>
                   </Box>
 
-                  <Box style={{ flex: 1, minHeight: 0 }}>
+                  <Box style={{ flex: 1, minHeight: 0, display: 'flex' }}>
                     {loading ? (
                       <Center h="100%">
                         <Loader />
