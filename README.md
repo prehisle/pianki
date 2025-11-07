@@ -221,6 +221,16 @@ npm run migrate:sqlite
 
 脚本会自动备份 JSON 并写入 `backend/data/pianki.db`。
 
+### 版本发布流程
+
+1. 确保工作区干净并完成代码审查。
+2. 运行 `npm run release -- <版本号>`（例如 `0.1.13`）。该脚本会：
+   - 调用 `npm version` 更新根与各 workspace 的 `package.json`/`package-lock.json`
+   - 同步 `README.md`、`frontend/src/App.tsx`、`src-tauri/tauri.conf.json` 等非 npm 文件
+   - 自动提交并推送代码
+   - 删除并重建 `v<版本号>` tag，再推送触发 GitHub Actions 发布
+3. 如果只需手动同步非 npm 文件，可用 `npm run bump -- <新版本> [旧版本]`。
+
 ### Markdown到Anki的转换流程
 
 1. 用户在编辑器中输入Markdown
