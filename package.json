@@ -1,6 +1,6 @@
 {
   "name": "pianki",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "description": "Anki卡片快速制作工具",
   "private": true,
   "workspaces": [
