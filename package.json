@@ -1,6 +1,6 @@
 {
   "name": "pianki",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Anki卡片快速制作工具",
   "private": true,
   "workspaces": [
@@ -12,6 +12,7 @@
     "dev:backend": "npm run dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
     "build": "npm run build --workspace=frontend && npm run build --workspace=backend",
+    "bump": "node scripts/bump-version.mjs",
     "start": "npm run start --workspace=backend",
     "package:backend": "npm run build --workspace=backend && npm run prepare:native --workspace=backend && pkg backend/dist/index.js -t node20-macos-arm64,node20-macos-x64,node20-linux-x64,node20-linux-arm64,node20-win-x64 -o src-tauri/binaries/pianki-backend --compress Brotli --public-packages \"anki-apkg-export,marked,better-sqlite3,@mongodb-js/zstd\" --no-bytecode --public --config backend/package.json",
     "tauri": "tauri",
