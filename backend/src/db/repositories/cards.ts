@@ -102,6 +102,7 @@ export function createCard(input: CreateCardInput & { insert_before_id?: number;
         @front_image,
         @back_text,
         @back_image,
+        @guid,
         @sort_key,
         @created_at,
         @updated_at
@@ -114,6 +115,7 @@ export function createCard(input: CreateCardInput & { insert_before_id?: number;
     front_image: input.front_image ?? null,
     back_text: input.back_text ?? null,
     back_image: input.back_image ?? null,
+    guid,
     sort_key: sortKey,
     created_at: now,
     updated_at: now
