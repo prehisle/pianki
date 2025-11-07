@@ -32,6 +32,7 @@ export function closeDb() {
 export async function ensureSchema() {
   const db = getDb();
   db.exec(INITIAL_SCHEMA);
+  ensureGuidIndex(db);
 
   const existingVersionRow = db.prepare('SELECT value FROM meta WHERE key = ?').get('schema_version') as
     | { value: string }
@@ -117,4 +118,12 @@ function migrateV2ToV3(db: BetterSqliteDatabase) {
   }
 
   db.prepare('CREATE UNIQUE INDEX IF NOT EXISTS idx_cards_guid ON cards (guid)').run();
+}
+
+function ensureGuidIndex(db: BetterSqliteDatabase) {
+  const cols = db.prepare("PRAGMA table_info('cards')").all() as Array<{ name: string }>;
+  const hasGuid = cols.some((c) => c.name === 'guid');
+  if (hasGuid) {
+    db.prepare('CREATE UNIQUE INDEX IF NOT EXISTS idx_cards_guid ON cards (guid)').run();
+  }
 }
