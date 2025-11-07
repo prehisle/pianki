@@ -44,7 +44,7 @@ function App() {
   const [sortBy, setSortBy] = useState<'custom' | 'created' | 'updated'>('custom')
   const [query, setQuery] = useState('')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  const appVersion = '0.1.9'
+  const appVersion = '0.1.18'
 
   // 根据排序选项对卡片进行排序
   const displayCards = useMemo(() => {
