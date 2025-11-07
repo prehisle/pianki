@@ -2,7 +2,7 @@
 
 一个现代化的Anki卡片制作Web应用，支持Markdown格式、实时预览、图片插入，可导出为标准.apkg格式。
 
-![Version](https://img.shields.io/badge/version-0.1.16-blue)
+![Version](https://img.shields.io/badge/version-0.1.17-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 
